@@ -1151,9 +1151,9 @@ function mergeCloudPayload(cloudPayload, localPayload, options = {}) {
     version: 1,
     theme: preferenceSource.theme || localPayload.theme,
     language: preferenceSource.language || localPayload.language,
-    favorites: Array.from(new Set([...(cloudPayload.favorites || []), ...(localPayload.favorites || [])])),
+    favorites: normalizeStringArray(preferenceSource.favorites || localPayload.favorites),
     customCards: mergeCards(cloudPayload.customCards || [], localPayload.customCards || []),
-    recentCards: mergeRecent(cloudPayload.recentCards || [], localPayload.recentCards || []),
+    recentCards: normalizeStringArray(preferenceSource.recentCards || localPayload.recentCards).slice(0, 20),
     cardFrequency: mergeFrequency(cloudPayload.cardFrequency || {}, localPayload.cardFrequency || {}),
     clientUpdatedAt: preferLocal ? localPayload.clientUpdatedAt : cloudPayload.clientUpdatedAt || localPayload.clientUpdatedAt,
     savedAt: new Date().toISOString()
@@ -1193,8 +1193,8 @@ function mergeCards(primaryCards, secondaryCards) {
   return Array.from(byId.values()).sort((a, b) => String(b.id).localeCompare(String(a.id)));
 }
 
-function mergeRecent(primaryRecent, secondaryRecent) {
-  return Array.from(new Set([...primaryRecent, ...secondaryRecent])).slice(0, 20);
+function normalizeStringArray(value) {
+  return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
 }
 
 function mergeFrequency(primaryFrequency, secondaryFrequency) {
