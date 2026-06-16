@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#10131f" />
+    <meta name="description" content="NanStar Workstation — 面向日常开发的 Git 命令速查与复制面板。" />
+    <meta property="og:title" content="NanStar Workstation" />
+    <meta property="og:description" content="Git 命令速查面板 · 搜索 / 收藏 / 快速复制" />
+    <meta property="og:type" content="website" />
+    <title>NanStar Workstation</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2310131f'/><text x='16' y='23' text-anchor='middle' font-family='monospace' font-weight='800' font-size='18' fill='%235ef0dd'>NS</text></svg>" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="starscape" aria-hidden="true"></div>
+
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true"><span>NS</span></div>
+          <div>
+            <h1>NanStar</h1>
+            <p>Workstation · Command Atlas</p>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="工作站分类">
+          <button class="nav-item active mercury-nav" type="button" data-category="all">
+            <span>全部</span>
+            <small>全部卡片</small>
+          </button>
+          <button class="nav-item venus-nav" type="button" data-category="config">
+            <span>配置</span>
+            <small>环境设置</small>
+          </button>
+          <button class="nav-item mercury-nav" type="button" data-category="daily">
+            <span>日常</span>
+            <small>日常提交</small>
+          </button>
+          <button class="nav-item mars-nav" type="button" data-category="undo">
+            <span>撤销</span>
+            <small>撤销恢复</small>
+          </button>
+          <button class="nav-item earth-nav" type="button" data-category="remote">
+            <span>远程</span>
+            <small>远程同步</small>
+          </button>
+          <button class="nav-item saturn-nav" type="button" data-category="stash">
+            <span>暂存</span>
+            <small>暂存现场</small>
+          </button>
+          <button class="nav-item neptune-nav" type="button" data-category="danger">
+            <span>危险</span>
+            <small>危险操作</small>
+          </button>
+        </nav>
+      </aside>
+
+      <main class="main" id="mainScroll">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow" id="pageEyebrow">Mercury Orbit / Command Atlas</p>
+            <h2 id="pageTitle">NanStar Workstation</h2>
+          </div>
+          <div class="topbar-actions">
+            <button class="theme-toggle" id="themeToggle" type="button" aria-label="切换浅色主题" aria-pressed="false">
+              <span class="theme-icon" aria-hidden="true">☀</span>
+              <span class="theme-text">浅色</span>
+            </button>
+            <button class="language-toggle" id="languageToggle" type="button" aria-label="切换英文">
+              <span class="language-icon" aria-hidden="true">文</span>
+              <span class="language-text">EN</span>
+            </button>
+            <button class="ghost-button" id="showFavorites" type="button">收藏</button>
+            <button class="primary-button" id="addCardButton" type="button">新建卡片</button>
+          </div>
+        </header>
+
+        <section class="focus-panel workstation-hero">
+          <div class="focus-copy">
+            <p class="eyebrow">Command Locate</p>
+            <h3>快速定位命令</h3>
+          </div>
+          <div class="search-console">
+            <div class="search-row">
+              <input id="quickSearch" type="search" placeholder="搜：撤销 / 邮箱 / rebase / index.lock" autocomplete="off" aria-label="快速搜索命令卡片" />
+              <button class="primary-button" id="clearSearch" type="button">清空</button>
+            </div>
+            <div class="signal-row" id="quickFilters" aria-label="快捷筛选">
+              <button type="button" data-filter="all">全部</button>
+              <button type="button" data-filter="config">配置</button>
+              <button type="button" data-filter="undo">撤销</button>
+              <button type="button" data-filter="remote">远程</button>
+              <button type="button" data-filter="danger">危险</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="workspace-grid workstation-grid">
+          <div class="command-column">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow" id="resultEyebrow">Command Cards / 命令卡片</p>
+                <h3 id="resultTitle">高频 Git 场景</h3>
+              </div>
+              <span class="section-count" id="resultCount">0 cards</span>
+            </div>
+            <div class="card-grid" id="cardGrid" aria-live="polite"></div>
+          </div>
+
+          <aside class="right-rail">
+            <section class="status-panel detail-panel" id="detailPanel">
+              <div class="panel-head">
+                <p class="eyebrow">Selected Card / 当前卡片</p>
+              </div>
+              <div class="detail-content" id="detailContent">
+                <h3>先选一张卡片</h3>
+                <p>点击卡片查看备注；复制优先在命令行内完成。</p>
+              </div>
+            </section>
+
+            <section class="status-panel solar-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Solar Field / 星图</p>
+                  <h3>八轨行星</h3>
+                </div>
+                <div class="panel-actions">
+                  <button class="solar-expand icon-button" id="solarExpand" type="button" aria-label="全屏查看八轨行星" title="全屏查看">
+                    <span class="expand-icon" aria-hidden="true"></span>
+                  </button>
+                </div>
+              </div>
+              <div class="solar-content" id="solarContent">
+              <div class="solar-system" aria-hidden="true">
+                <div class="sun" data-celestial-en="Sun" data-celestial-cn="太阳"></div>
+                <div class="orbit" style="--inset: 100px; --duration: 11s; --planet-size: 5px; --planet-color: var(--mercury);">
+                  <span class="planet mercury-planet" data-celestial-en="Mercury" data-celestial-cn="水星"></span>
+                </div>
+                <div class="orbit" style="--inset: 86px; --duration: 15s; --planet-size: 9px; --planet-color: var(--venus);">
+                  <span class="planet venus-planet" data-celestial-en="Venus" data-celestial-cn="金星"></span>
+                </div>
+                <div class="orbit" style="--inset: 71px; --duration: 18s; --planet-size: 10px; --planet-color: var(--earth);">
+                  <span class="planet earth-planet" data-celestial-en="Earth" data-celestial-cn="地球"></span>
+                </div>
+                <div class="orbit" style="--inset: 57px; --duration: 23s; --planet-size: 6px; --planet-color: var(--mars);">
+                  <span class="planet mars-planet" data-celestial-en="Mars" data-celestial-cn="火星"></span>
+                </div>
+                <div class="orbit" style="--inset: 41px; --duration: 31s; --planet-size: 18px; --planet-color: var(--jupiter);">
+                  <span class="planet jupiter-planet" data-celestial-en="Jupiter" data-celestial-cn="木星"></span>
+                </div>
+                <div class="orbit" style="--inset: 27px; --duration: 38s; --planet-size: 16px; --planet-color: var(--saturn);">
+                  <span class="planet saturn-planet" data-celestial-en="Saturn" data-celestial-cn="土星"></span>
+                </div>
+                <div class="orbit" style="--inset: 14px; --duration: 44s; --planet-size: 12px; --planet-color: var(--uranus);">
+                  <span class="planet uranus-planet" data-celestial-en="Uranus" data-celestial-cn="天王星"></span>
+                </div>
+                <div class="orbit" style="--inset: 4px; --duration: 51s; --planet-size: 12px; --planet-color: var(--neptune);">
+                  <span class="planet neptune-planet" data-celestial-en="Neptune" data-celestial-cn="海王星"></span>
+                </div>
+              </div>
+              </div>
+            </section>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="card-dialog" id="cardDialog">
+      <form method="dialog" class="card-form" id="cardForm">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Custom Card / 自定义</p>
+            <h3>添加自定义卡片</h3>
+          </div>
+          <button class="ghost-button compact" value="cancel" type="submit" formnovalidate>关闭</button>
+        </div>
+        <label><span data-i18n="formTitle">标题</span> <input name="title" required placeholder="例如：撤销最近一次 commit" /></label>
+        <label><span data-i18n="formCategory">分类</span>
+          <select name="category">
+            <option value="daily">日常</option>
+            <option value="config">配置</option>
+            <option value="undo">撤销</option>
+            <option value="remote">远程</option>
+            <option value="stash">暂存</option>
+            <option value="danger">危险</option>
+          </select>
+        </label>
+        <label><span data-i18n="formScenario">场景</span> <textarea name="scenario" rows="2" placeholder="什么时候用这张卡"></textarea></label>
+        <label><span data-i18n="formCommand">命令</span> <textarea name="command" rows="4" required placeholder="git status"></textarea></label>
+        <label><span data-i18n="formNote">备注</span> <textarea name="note" rows="2" placeholder="执行前要注意什么"></textarea></label>
+        <label><span data-i18n="formTags">标签</span> <input name="tags" placeholder="用逗号分隔，例如 git,撤销,commit" /></label>
+        <button class="primary-button" type="submit" value="default">保存卡片</button>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast">Copied to clipboard</div>
+    <section class="solar-overlay" id="solarOverlay" aria-hidden="true">
+      <div class="solar-overlay-top">
+        <div>
+          <p class="eyebrow">Solar Field / 全屏星图</p>
+          <h2>八轨行星观测</h2>
+        </div>
+        <button class="solar-close" id="solarClose" type="button" aria-label="关闭八轨行星观测">关闭</button>
+      </div>
+
+      <div class="solar-stage">
+        <div class="solar-system solar-system-large" id="solarSystemLarge" aria-label="八轨行星全屏视图">
+          <div class="sun" data-celestial-en="Sun" data-celestial-cn="太阳"></div>
+          <div class="orbit" style="--inset: 47%; --duration: 11s; --planet-size: 9px; --planet-color: var(--mercury);">
+            <span class="planet mercury-planet" data-celestial-en="Mercury" data-celestial-cn="水星"></span>
+          </div>
+          <div class="orbit" style="--inset: 41%; --duration: 15s; --planet-size: 16px; --planet-color: var(--venus);">
+            <span class="planet venus-planet" data-celestial-en="Venus" data-celestial-cn="金星"></span>
+          </div>
+          <div class="orbit" style="--inset: 35%; --duration: 18s; --planet-size: 18px; --planet-color: var(--earth);">
+            <span class="planet earth-planet" data-celestial-en="Earth" data-celestial-cn="地球"></span>
+          </div>
+          <div class="orbit" style="--inset: 29%; --duration: 23s; --planet-size: 12px; --planet-color: var(--mars);">
+            <span class="planet mars-planet" data-celestial-en="Mars" data-celestial-cn="火星"></span>
+          </div>
+          <div class="orbit" style="--inset: 22%; --duration: 31s; --planet-size: 34px; --planet-color: var(--jupiter);">
+            <span class="planet jupiter-planet" data-celestial-en="Jupiter" data-celestial-cn="木星"></span>
+          </div>
+          <div class="orbit" style="--inset: 15%; --duration: 38s; --planet-size: 30px; --planet-color: var(--saturn);">
+            <span class="planet saturn-planet" data-celestial-en="Saturn" data-celestial-cn="土星"></span>
+          </div>
+          <div class="orbit" style="--inset: 8%; --duration: 44s; --planet-size: 22px; --planet-color: var(--uranus);">
+            <span class="planet uranus-planet" data-celestial-en="Uranus" data-celestial-cn="天王星"></span>
+          </div>
+          <div class="orbit" style="--inset: 2%; --duration: 51s; --planet-size: 22px; --planet-color: var(--neptune);">
+            <span class="planet neptune-planet" data-celestial-en="Neptune" data-celestial-cn="海王星"></span>
+          </div>
+        </div>
+      </div>
+
+      <aside class="celestial-info" id="celestialInfo">
+        <p class="eyebrow">Selected Body / 星体</p>
+        <h3>点击一颗行星</h3>
+        <strong>点击太阳或行星</strong>
+        <p>全屏模式会保持转动。点击太阳或行星后，轨道暂停并显示简介；点击空白区域后继续转动。</p>
+      </aside>
+    </section>
+    <script src="./script.js"></script>
+  </body>
+</html>

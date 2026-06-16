@@ -1,0 +1,11 @@
+.claude/
+memory/
+SOUL.md
+USER.md
+
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
+.env
+.env.*
