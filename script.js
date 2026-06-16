@@ -4,8 +4,21 @@ const storageKeys = {
   favorites: "nanstar-workstation-favorites",
   customCards: "nanstar-workstation-custom-cards",
   recentCards: "nanstar-workstation-recent",
-  cardFrequency: "nanstar-workstation-frequency"
+  cardFrequency: "nanstar-workstation-frequency",
+  syncEmail: "nanstar-workstation-sync-email"
 };
+
+const supabaseConfig = {
+  url: "https://npvslireymkfyqmfwhmh.supabase.co",
+  key: "sb_publishable_OqlBUWh-Mj86SRYdWXdReA_sSdqrdwV"
+};
+
+const supabaseBrowser = window.nanstarSupabase || window.supabase;
+const supabaseClient = supabaseBrowser?.createClient
+  ? supabaseBrowser.createClient(supabaseConfig.url, supabaseConfig.key)
+  : null;
+
+document.documentElement.dataset.syncSdk = supabaseClient ? "ready" : "missing";
 
 const categoryMeta = {
   all: { label: "全部", labelEn: "All", sub: "全部卡片", subEn: "All cards", eyebrow: "All Orbits / Command Atlas", title: "NanStar Workstation", titleEn: "NanStar Workstation" },
@@ -96,7 +109,26 @@ const uiText = {
     favoriteRemoved: "已取消收藏",
     copied: "命令已复制",
     copyUnavailable: "复制不可用",
-    storageFull: "本地存储空间不足，请清理浏览器数据"
+    storageFull: "本地存储空间不足，请清理浏览器数据",
+    sync: "同步",
+    syncTitle: "云端同步",
+    syncEmail: "邮箱",
+    syncPassword: "密码",
+    syncSignIn: "登录",
+    syncSignUp: "注册",
+    syncSignOut: "退出",
+    syncNow: "立即同步",
+    syncOffline: "未登录",
+    syncOnline: "已登录",
+    syncBusy: "同步中",
+    syncReady: "已同步",
+    syncFailed: "同步失败",
+    syncLoginRequired: "请先输入邮箱和密码",
+    syncSignUpDone: "注册成功，请检查邮箱或直接登录",
+    syncSignInDone: "已登录并同步",
+    syncSignOutDone: "已退出同步",
+    syncSaved: "云端已同步",
+    syncSdkMissing: "Supabase SDK 未加载"
   },
   en: {
     htmlLang: "en",
@@ -167,7 +199,26 @@ const uiText = {
     favoriteRemoved: "Removed from favorites",
     copied: "Command copied",
     copyUnavailable: "Copy unavailable",
-    storageFull: "Local storage is full. Clear browser data and try again."
+    storageFull: "Local storage is full. Clear browser data and try again.",
+    sync: "Sync",
+    syncTitle: "Cloud Sync",
+    syncEmail: "Email",
+    syncPassword: "Password",
+    syncSignIn: "Sign In",
+    syncSignUp: "Sign Up",
+    syncSignOut: "Sign Out",
+    syncNow: "Sync Now",
+    syncOffline: "Signed out",
+    syncOnline: "Signed in",
+    syncBusy: "Syncing",
+    syncReady: "Synced",
+    syncFailed: "Sync failed",
+    syncLoginRequired: "Enter email and password first",
+    syncSignUpDone: "Account created. Check email or sign in directly.",
+    syncSignInDone: "Signed in and synced",
+    syncSignOutDone: "Signed out",
+    syncSaved: "Cloud sync complete",
+    syncSdkMissing: "Supabase SDK is not loaded"
   }
 };
 
@@ -442,6 +493,15 @@ const elements = {
   detailPanel: document.getElementById("detailPanel"),
   showFavorites: document.getElementById("showFavorites"),
   addCardButton: document.getElementById("addCardButton"),
+  syncButton: document.getElementById("syncButton"),
+  syncDot: document.getElementById("syncDot"),
+  syncDialog: document.getElementById("syncDialog"),
+  syncForm: document.getElementById("syncForm"),
+  syncStatusText: document.getElementById("syncStatusText"),
+  syncSignIn: document.getElementById("syncSignIn"),
+  syncSignUp: document.getElementById("syncSignUp"),
+  syncSignOut: document.getElementById("syncSignOut"),
+  syncNow: document.getElementById("syncNow"),
   cardDialog: document.getElementById("cardDialog"),
   cardForm: document.getElementById("cardForm"),
   solarExpand: document.getElementById("solarExpand"),
@@ -457,7 +517,11 @@ const state = {
   search: "",
   favoritesOnly: false,
   selectedId: null,
-  language: localStorage.getItem(storageKeys.language) === "en" ? "en" : "zh"
+  language: localStorage.getItem(storageKeys.language) === "en" ? "en" : "zh",
+  syncUser: null,
+  syncStatus: "offline",
+  isSyncing: false,
+  suppressSync: false
 };
 
 let favorites = new Set(readJson(storageKeys.favorites, []));
@@ -470,6 +534,7 @@ applyTheme(localStorage.getItem(storageKeys.theme) || systemTheme);
 applyLanguage(state.language);
 bindEvents();
 render();
+initSync();
 
 function bindEvents() {
   elements.navItems.forEach((button) => {
@@ -515,6 +580,28 @@ function bindEvents() {
     elements.cardForm?.elements.title?.focus();
   });
 
+  elements.syncButton?.addEventListener("click", () => {
+    elements.syncDialog?.showModal();
+    elements.syncForm?.elements.email?.focus();
+    renderSyncUi();
+  });
+
+  elements.syncDialog?.addEventListener("close", () => {
+    elements.syncForm?.elements.password && (elements.syncForm.elements.password.value = "");
+  });
+
+  elements.syncForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (event.submitter?.value === "cancel") {
+      elements.syncDialog?.close("cancel");
+    }
+  });
+
+  elements.syncSignIn?.addEventListener("click", () => signInSync());
+  elements.syncSignUp?.addEventListener("click", () => signUpSync());
+  elements.syncSignOut?.addEventListener("click", () => signOutSync());
+  elements.syncNow?.addEventListener("click", () => syncCloudState({ showDoneToast: true }));
+
   elements.cardDialog?.addEventListener("close", () => {
     if (elements.cardDialog.returnValue !== "default") {
       elements.cardForm?.reset();
@@ -535,6 +622,7 @@ function bindEvents() {
     const nextTheme = document.body.classList.contains("theme-light") ? "dark" : "light";
     applyTheme(nextTheme);
     localStorage.setItem(storageKeys.theme, nextTheme);
+    scheduleCloudSync();
   });
 
   elements.languageToggle?.addEventListener("click", () => {
@@ -542,6 +630,7 @@ function bindEvents() {
     localStorage.setItem(storageKeys.language, state.language);
     applyLanguage(state.language);
     render();
+    scheduleCloudSync();
   });
 
   elements.cardGrid?.addEventListener("click", async (event) => {
@@ -831,6 +920,7 @@ function applyLanguage(language) {
   document.documentElement.lang = t.htmlLang;
 
   if (elements.brandSub) elements.brandSub.textContent = t.brandSub;
+  elements.syncButton?.querySelector(".sync-text") && (elements.syncButton.querySelector(".sync-text").textContent = t.sync);
   if (elements.languageToggle) {
     elements.languageToggle.setAttribute("aria-label", t.langLabel);
     elements.languageToggle.querySelector(".language-text").textContent = t.langButton;
@@ -884,8 +974,264 @@ function applyLanguage(language) {
     option.textContent = localizeMeta(meta, "label");
   });
 
+  renderSyncUi();
   clearCelestialSelection();
   applyTheme(document.body.classList.contains("theme-light") ? "light" : "dark");
+}
+
+async function initSync() {
+  renderSyncUi();
+  if (!supabaseClient) return;
+
+  try {
+    const savedEmail = localStorage.getItem(storageKeys.syncEmail);
+    if (savedEmail && elements.syncForm?.elements.email) {
+      elements.syncForm.elements.email.value = savedEmail;
+    }
+
+    const { data } = await supabaseClient.auth.getSession();
+    state.syncUser = data.session?.user || null;
+    renderSyncUi();
+
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      state.syncUser = session?.user || null;
+      renderSyncUi();
+    });
+
+    if (state.syncUser) {
+      await syncCloudState({ showDoneToast: false });
+    }
+  } catch {
+    setSyncStatus("failed");
+  }
+}
+
+async function signInSync() {
+  const t = getText();
+  if (!supabaseClient) {
+    showToast(t.syncSdkMissing);
+    return;
+  }
+
+  const { email, password } = getSyncCredentials();
+  if (!email || !password) {
+    showToast(t.syncLoginRequired);
+    return;
+  }
+
+  setSyncStatus("busy");
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) {
+    setSyncStatus("offline");
+    showToast(error.message || t.syncFailed);
+    return;
+  }
+
+  localStorage.setItem(storageKeys.syncEmail, email);
+  state.syncUser = data.user || null;
+  await syncCloudState({ showDoneToast: false });
+  showToast(t.syncSignInDone);
+}
+
+async function signUpSync() {
+  const t = getText();
+  if (!supabaseClient) {
+    showToast(t.syncSdkMissing);
+    return;
+  }
+
+  const { email, password } = getSyncCredentials();
+  if (!email || !password) {
+    showToast(t.syncLoginRequired);
+    return;
+  }
+
+  setSyncStatus("busy");
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if (error) {
+    setSyncStatus("offline");
+    showToast(error.message || t.syncFailed);
+    return;
+  }
+
+  localStorage.setItem(storageKeys.syncEmail, email);
+  state.syncUser = data.session?.user || null;
+  if (state.syncUser) await syncCloudState({ showDoneToast: false });
+  setSyncStatus(state.syncUser ? "ready" : "offline");
+  showToast(t.syncSignUpDone);
+}
+
+async function signOutSync() {
+  const t = getText();
+  if (!supabaseClient) return;
+  await supabaseClient.auth.signOut();
+  state.syncUser = null;
+  setSyncStatus("offline");
+  showToast(t.syncSignOutDone);
+}
+
+async function syncCloudState(options = {}) {
+  const t = getText();
+  if (!supabaseClient || !state.syncUser || state.isSyncing) return false;
+
+  state.isSyncing = true;
+  setSyncStatus("busy");
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("workstation_state")
+      .select("payload, updated_at")
+      .eq("user_id", state.syncUser.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const merged = mergeCloudPayload(data?.payload || {}, getLocalPayload());
+    applyCloudPayload(merged);
+
+    const { error: upsertError } = await supabaseClient
+      .from("workstation_state")
+      .upsert({
+        user_id: state.syncUser.id,
+        payload: merged,
+        updated_at: new Date().toISOString()
+      });
+
+    if (upsertError) throw upsertError;
+
+    setSyncStatus("ready");
+    if (options.showDoneToast) showToast(t.syncSaved);
+    return true;
+  } catch (error) {
+    setSyncStatus("failed");
+    showToast(error?.message || t.syncFailed);
+    return false;
+  } finally {
+    state.isSyncing = false;
+  }
+}
+
+function scheduleCloudSync(options = {}) {
+  if (state.suppressSync || !state.syncUser || !supabaseClient) return;
+  clearTimeout(scheduleCloudSync.timer);
+  scheduleCloudSync.timer = setTimeout(() => {
+    syncCloudState({ showDoneToast: !options.silent });
+  }, options.silent ? 900 : 350);
+}
+
+function getSyncCredentials() {
+  return {
+    email: clean(elements.syncForm?.elements.email?.value).toLowerCase(),
+    password: String(elements.syncForm?.elements.password?.value || "")
+  };
+}
+
+function getLocalPayload() {
+  return {
+    version: 1,
+    theme: document.body.classList.contains("theme-light") ? "light" : "dark",
+    language: state.language,
+    favorites: Array.from(favorites),
+    customCards,
+    recentCards,
+    cardFrequency,
+    savedAt: new Date().toISOString()
+  };
+}
+
+function mergeCloudPayload(cloudPayload, localPayload) {
+  return {
+    version: 1,
+    theme: cloudPayload.theme || localPayload.theme,
+    language: cloudPayload.language || localPayload.language,
+    favorites: Array.from(new Set([...(cloudPayload.favorites || []), ...(localPayload.favorites || [])])),
+    customCards: mergeCards(cloudPayload.customCards || [], localPayload.customCards || []),
+    recentCards: mergeRecent(cloudPayload.recentCards || [], localPayload.recentCards || []),
+    cardFrequency: mergeFrequency(cloudPayload.cardFrequency || {}, localPayload.cardFrequency || {}),
+    savedAt: new Date().toISOString()
+  };
+}
+
+function applyCloudPayload(payload) {
+  state.suppressSync = true;
+
+  favorites = new Set(Array.isArray(payload.favorites) ? payload.favorites : []);
+  customCards = (Array.isArray(payload.customCards) ? payload.customCards : []).filter(isValidCustomCard);
+  recentCards = Array.isArray(payload.recentCards) ? payload.recentCards.slice(0, 20) : [];
+  cardFrequency = payload.cardFrequency && typeof payload.cardFrequency === "object" ? payload.cardFrequency : {};
+  state.language = payload.language === "en" ? "en" : "zh";
+
+  writeJson(storageKeys.favorites, Array.from(favorites));
+  writeJson(storageKeys.customCards, customCards);
+  writeJson(storageKeys.recentCards, recentCards);
+  writeJson(storageKeys.cardFrequency, cardFrequency);
+  localStorage.setItem(storageKeys.language, state.language);
+  if (payload.theme === "light" || payload.theme === "dark") {
+    localStorage.setItem(storageKeys.theme, payload.theme);
+    applyTheme(payload.theme);
+  }
+
+  applyLanguage(state.language);
+  render();
+  state.suppressSync = false;
+}
+
+function mergeCards(primaryCards, secondaryCards) {
+  const byId = new Map();
+  [...secondaryCards, ...primaryCards].forEach((card) => {
+    if (isValidCustomCard(card)) byId.set(card.id, card);
+  });
+  return Array.from(byId.values()).sort((a, b) => String(b.id).localeCompare(String(a.id)));
+}
+
+function mergeRecent(primaryRecent, secondaryRecent) {
+  return Array.from(new Set([...primaryRecent, ...secondaryRecent])).slice(0, 20);
+}
+
+function mergeFrequency(primaryFrequency, secondaryFrequency) {
+  const merged = { ...secondaryFrequency };
+  Object.entries(primaryFrequency).forEach(([id, count]) => {
+    merged[id] = Math.max(Number(merged[id]) || 0, Number(count) || 0);
+  });
+  return merged;
+}
+
+function setSyncStatus(status) {
+  state.syncStatus = status;
+  renderSyncUi();
+}
+
+function renderSyncUi() {
+  const t = getText();
+  const hasUser = Boolean(state.syncUser);
+  const statusText = {
+    offline: hasUser ? t.syncOnline : t.syncOffline,
+    busy: t.syncBusy,
+    ready: hasUser ? t.syncReady : t.syncOffline,
+    failed: t.syncFailed
+  }[state.syncStatus] || (hasUser ? t.syncOnline : t.syncOffline);
+
+  const dots = [elements.syncDot, elements.syncStatusText?.parentElement?.querySelector(".sync-dot")].filter(Boolean);
+  dots.forEach((dot) => {
+    dot.classList.toggle("is-online", hasUser && state.syncStatus !== "busy" && state.syncStatus !== "failed");
+    dot.classList.toggle("is-busy", state.syncStatus === "busy");
+  });
+
+  if (elements.syncStatusText) elements.syncStatusText.textContent = statusText;
+  if (elements.syncButton) {
+    elements.syncButton.setAttribute("aria-label", `${t.sync}: ${statusText}`);
+    const text = elements.syncButton.querySelector(".sync-text");
+    if (text) text.textContent = t.sync;
+  }
+
+  elements.syncSignIn && (elements.syncSignIn.textContent = t.syncSignIn);
+  elements.syncSignUp && (elements.syncSignUp.textContent = t.syncSignUp);
+  elements.syncSignOut && (elements.syncSignOut.textContent = t.syncSignOut);
+  elements.syncNow && (elements.syncNow.textContent = t.syncNow);
+  elements.syncNow && (elements.syncNow.disabled = !hasUser || state.isSyncing);
+  elements.syncSignOut && (elements.syncSignOut.disabled = !hasUser);
+  elements.syncSignIn && (elements.syncSignIn.disabled = !supabaseClient || state.isSyncing);
+  elements.syncSignUp && (elements.syncSignUp.disabled = !supabaseClient || state.isSyncing);
 }
 
 function saveCustomCard(formData) {
@@ -924,6 +1270,7 @@ function saveCustomCard(formData) {
   elements.cardDialog.close("saved");
   showToast(t.savedCard);
   render();
+  scheduleCloudSync();
 }
 
 function toggleFavorite(id) {
@@ -938,6 +1285,7 @@ function toggleFavorite(id) {
   }
   writeJson(storageKeys.favorites, Array.from(favorites));
   render();
+  scheduleCloudSync();
 }
 
 function recordCardUsage(id) {
@@ -949,6 +1297,7 @@ function recordCardUsage(id) {
   recentCards.unshift(id);
   if (recentCards.length > 20) recentCards = recentCards.slice(0, 20);
   writeJson(storageKeys.recentCards, recentCards);
+  scheduleCloudSync({ silent: true });
 }
 
 async function copyText(text) {

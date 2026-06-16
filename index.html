@@ -72,6 +72,10 @@
               <span class="language-icon" aria-hidden="true">文</span>
               <span class="language-text">EN</span>
             </button>
+            <button class="ghost-button sync-button" id="syncButton" type="button" aria-label="打开云端同步">
+              <span class="sync-dot" id="syncDot" aria-hidden="true"></span>
+              <span class="sync-text">同步</span>
+            </button>
             <button class="ghost-button" id="showFavorites" type="button">收藏</button>
             <button class="primary-button" id="addCardButton" type="button">新建卡片</button>
           </div>
@@ -195,6 +199,30 @@
       </form>
     </dialog>
 
+    <dialog class="card-dialog sync-dialog" id="syncDialog">
+      <form method="dialog" class="card-form sync-form" id="syncForm">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Cloud Sync</p>
+            <h3 data-i18n="syncTitle">云端同步</h3>
+          </div>
+          <button class="ghost-button compact" value="cancel" type="submit" formnovalidate data-i18n="formClose">关闭</button>
+        </div>
+        <div class="sync-status" id="syncStatus">
+          <span class="sync-dot" aria-hidden="true"></span>
+          <strong id="syncStatusText">未登录</strong>
+        </div>
+        <label><span data-i18n="syncEmail">邮箱</span> <input name="email" type="email" autocomplete="email" placeholder="you@example.com" /></label>
+        <label><span data-i18n="syncPassword">密码</span> <input name="password" type="password" autocomplete="current-password" placeholder="Supabase password" /></label>
+        <div class="sync-actions">
+          <button class="primary-button" id="syncSignIn" type="button" data-i18n="syncSignIn">登录</button>
+          <button class="ghost-button" id="syncSignUp" type="button" data-i18n="syncSignUp">注册</button>
+          <button class="ghost-button" id="syncNow" type="button" data-i18n="syncNow">立即同步</button>
+          <button class="ghost-button" id="syncSignOut" type="button" data-i18n="syncSignOut">退出</button>
+        </div>
+      </form>
+    </dialog>
+
     <div class="toast" id="toast">Copied to clipboard</div>
     <section class="solar-overlay" id="solarOverlay" aria-hidden="true">
       <div class="solar-overlay-top">
@@ -242,6 +270,10 @@
         <p>全屏模式会保持转动。点击太阳或行星后，轨道暂停并显示简介；点击空白区域后继续转动。</p>
       </aside>
     </section>
+    <script src="./vendor/supabase.min.js"></script>
+    <script>
+      window.nanstarSupabase = typeof supabase !== "undefined" ? supabase : window.supabase;
+    </script>
     <script src="./script.js"></script>
   </body>
 </html>

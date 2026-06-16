@@ -36,7 +36,7 @@ http.createServer((req, res) => {
     res.writeHead(200, {
       "Cache-Control": isAsset ? "public, max-age=31536000, immutable" : "no-cache",
       "Content-Type": mime[ext] || "application/octet-stream",
-      "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:"
+      "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co"
     });
     res.end(data);
   });
