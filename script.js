@@ -5,7 +5,8 @@ const storageKeys = {
   customCards: "nanstar-workstation-custom-cards",
   recentCards: "nanstar-workstation-recent",
   cardFrequency: "nanstar-workstation-frequency",
-  syncEmail: "nanstar-workstation-sync-email"
+  syncEmail: "nanstar-workstation-sync-email",
+  localUpdatedAt: "nanstar-workstation-local-updated-at"
 };
 
 const supabaseConfig = {
@@ -600,7 +601,7 @@ function bindEvents() {
   elements.syncSignIn?.addEventListener("click", () => signInSync());
   elements.syncSignUp?.addEventListener("click", () => signUpSync());
   elements.syncSignOut?.addEventListener("click", () => signOutSync());
-  elements.syncNow?.addEventListener("click", () => syncCloudState({ showDoneToast: true }));
+  elements.syncNow?.addEventListener("click", () => syncCloudState({ showDoneToast: true, preferLocal: true }));
 
   elements.cardDialog?.addEventListener("close", () => {
     if (elements.cardDialog.returnValue !== "default") {
@@ -622,15 +623,17 @@ function bindEvents() {
     const nextTheme = document.body.classList.contains("theme-light") ? "dark" : "light";
     applyTheme(nextTheme);
     localStorage.setItem(storageKeys.theme, nextTheme);
-    scheduleCloudSync();
+    touchLocalState();
+    scheduleCloudSync({ preferLocal: true });
   });
 
   elements.languageToggle?.addEventListener("click", () => {
     state.language = state.language === "zh" ? "en" : "zh";
     localStorage.setItem(storageKeys.language, state.language);
+    touchLocalState();
     applyLanguage(state.language);
     render();
-    scheduleCloudSync();
+    scheduleCloudSync({ preferLocal: true });
   });
 
   elements.cardGrid?.addEventListener("click", async (event) => {
@@ -1086,7 +1089,7 @@ async function syncCloudState(options = {}) {
 
     if (error) throw error;
 
-    const merged = mergeCloudPayload(data?.payload || {}, getLocalPayload());
+    const merged = mergeCloudPayload(data?.payload || {}, getLocalPayload(), options);
     applyCloudPayload(merged);
 
     const { error: upsertError } = await supabaseClient
@@ -1115,7 +1118,7 @@ function scheduleCloudSync(options = {}) {
   if (state.suppressSync || !state.syncUser || !supabaseClient) return;
   clearTimeout(scheduleCloudSync.timer);
   scheduleCloudSync.timer = setTimeout(() => {
-    syncCloudState({ showDoneToast: !options.silent });
+    syncCloudState({ showDoneToast: !options.silent, preferLocal: options.preferLocal });
   }, options.silent ? 900 : 350);
 }
 
@@ -1135,19 +1138,24 @@ function getLocalPayload() {
     customCards,
     recentCards,
     cardFrequency,
+    clientUpdatedAt: localStorage.getItem(storageKeys.localUpdatedAt) || new Date().toISOString(),
     savedAt: new Date().toISOString()
   };
 }
 
-function mergeCloudPayload(cloudPayload, localPayload) {
+function mergeCloudPayload(cloudPayload, localPayload, options = {}) {
+  const preferLocal = options.preferLocal || isLocalNewer(localPayload, cloudPayload);
+  const preferenceSource = preferLocal ? localPayload : cloudPayload;
+
   return {
     version: 1,
-    theme: cloudPayload.theme || localPayload.theme,
-    language: cloudPayload.language || localPayload.language,
+    theme: preferenceSource.theme || localPayload.theme,
+    language: preferenceSource.language || localPayload.language,
     favorites: Array.from(new Set([...(cloudPayload.favorites || []), ...(localPayload.favorites || [])])),
     customCards: mergeCards(cloudPayload.customCards || [], localPayload.customCards || []),
     recentCards: mergeRecent(cloudPayload.recentCards || [], localPayload.recentCards || []),
     cardFrequency: mergeFrequency(cloudPayload.cardFrequency || {}, localPayload.cardFrequency || {}),
+    clientUpdatedAt: preferLocal ? localPayload.clientUpdatedAt : cloudPayload.clientUpdatedAt || localPayload.clientUpdatedAt,
     savedAt: new Date().toISOString()
   };
 }
@@ -1166,6 +1174,7 @@ function applyCloudPayload(payload) {
   writeJson(storageKeys.recentCards, recentCards);
   writeJson(storageKeys.cardFrequency, cardFrequency);
   localStorage.setItem(storageKeys.language, state.language);
+  if (payload.clientUpdatedAt) localStorage.setItem(storageKeys.localUpdatedAt, payload.clientUpdatedAt);
   if (payload.theme === "light" || payload.theme === "dark") {
     localStorage.setItem(storageKeys.theme, payload.theme);
     applyTheme(payload.theme);
@@ -1194,6 +1203,18 @@ function mergeFrequency(primaryFrequency, secondaryFrequency) {
     merged[id] = Math.max(Number(merged[id]) || 0, Number(count) || 0);
   });
   return merged;
+}
+
+function touchLocalState() {
+  localStorage.setItem(storageKeys.localUpdatedAt, new Date().toISOString());
+}
+
+function isLocalNewer(localPayload, cloudPayload) {
+  const localTime = Date.parse(localPayload.clientUpdatedAt || localPayload.savedAt || "");
+  const cloudTime = Date.parse(cloudPayload.clientUpdatedAt || cloudPayload.savedAt || "");
+  if (Number.isNaN(localTime)) return false;
+  if (Number.isNaN(cloudTime)) return true;
+  return localTime >= cloudTime;
 }
 
 function setSyncStatus(status) {
@@ -1270,7 +1291,8 @@ function saveCustomCard(formData) {
   elements.cardDialog.close("saved");
   showToast(t.savedCard);
   render();
-  scheduleCloudSync();
+  touchLocalState();
+  scheduleCloudSync({ preferLocal: true });
 }
 
 function toggleFavorite(id) {
@@ -1285,7 +1307,8 @@ function toggleFavorite(id) {
   }
   writeJson(storageKeys.favorites, Array.from(favorites));
   render();
-  scheduleCloudSync();
+  touchLocalState();
+  scheduleCloudSync({ preferLocal: true });
 }
 
 function recordCardUsage(id) {
@@ -1297,7 +1320,8 @@ function recordCardUsage(id) {
   recentCards.unshift(id);
   if (recentCards.length > 20) recentCards = recentCards.slice(0, 20);
   writeJson(storageKeys.recentCards, recentCards);
-  scheduleCloudSync({ silent: true });
+  touchLocalState();
+  scheduleCloudSync({ silent: true, preferLocal: true });
 }
 
 async function copyText(text) {
