@@ -31,14 +31,32 @@ const categoryMeta = {
   danger: { label: "危险", labelEn: "Danger", sub: "危险操作", subEn: "Careful ops", eyebrow: "Neptune Orbit / Confirm First", title: "危险操作", titleEn: "Careful Operations" }
 };
 
+const moduleMeta = {
+  git: { label: "Git", labelEn: "Git", sub: "命令速查", subEn: "Command cards", eyebrow: "Mercury Orbit / Git Module", title: "Git 命令工作台", titleEn: "Git Command Workstation", focusTitle: "快速定位 Git 命令", focusTitleEn: "Find Git Commands Fast", searchPlaceholder: "搜：撤销 / 邮箱 / rebase / index.lock", searchPlaceholderEn: "Search: undo / email / rebase / index.lock" },
+  windows: { label: "Windows", labelEn: "Windows", sub: "系统命令", subEn: "System commands", eyebrow: "Earth Orbit / Windows Module", title: "Windows 与 PowerShell", titleEn: "Windows & PowerShell", focusTitle: "快速定位系统命令", focusTitleEn: "Find System Commands Fast", searchPlaceholder: "搜：休眠 / 端口 / 进程 / IP", searchPlaceholderEn: "Search: sleep / port / process / IP" },
+  cloud: { label: "Cloud", labelEn: "Cloud", sub: "部署入口", subEn: "Deploy notes", eyebrow: "Venus Orbit / Cloud Module", title: "GitHub 与 Cloudflare", titleEn: "GitHub & Cloudflare", focusTitle: "快速定位部署步骤", focusTitleEn: "Find Deploy Steps Fast", searchPlaceholder: "搜：Cloudflare / Pages / GitHub / main", searchPlaceholderEn: "Search: Cloudflare / Pages / GitHub / main" },
+  database: { label: "Database", labelEn: "Database", sub: "数据同步", subEn: "Data sync", eyebrow: "Saturn Orbit / Data Module", title: "Supabase 与数据同步", titleEn: "Supabase & Data Sync", focusTitle: "快速定位数据库操作", focusTitleEn: "Find Database Ops Fast", searchPlaceholder: "搜：RLS / policy / auth / table", searchPlaceholderEn: "Search: RLS / policy / auth / table" },
+  ai: { label: "AI", labelEn: "AI", sub: "提示模板", subEn: "Prompt templates", eyebrow: "Mars Orbit / AI Module", title: "AI 提示模板", titleEn: "AI Prompt Templates", focusTitle: "快速定位提示词", focusTitleEn: "Find Prompt Templates Fast", searchPlaceholder: "搜：审查 / 总结 / 翻译 / 代码", searchPlaceholderEn: "Search: review / summary / translate / code" },
+  links: { label: "Links", labelEn: "Links", sub: "常用入口", subEn: "Quick links", eyebrow: "Neptune Orbit / Link Module", title: "常用链接入口", titleEn: "Quick Links", focusTitle: "快速定位入口", focusTitleEn: "Find Links Fast", searchPlaceholder: "搜：GitHub / Supabase / Cloudflare", searchPlaceholderEn: "Search: GitHub / Supabase / Cloudflare" },
+  templates: { label: "Templates", labelEn: "Templates", sub: "工作模板", subEn: "Work templates", eyebrow: "Uranus Orbit / Template Module", title: "个人工作模板", titleEn: "Personal Templates", focusTitle: "快速定位模板", focusTitleEn: "Find Templates Fast", searchPlaceholder: "搜：日报 / 提交 / 项目 / 复盘", searchPlaceholderEn: "Search: daily / commit / project / review" }
+};
+
 const cardClassByCategory = {
   config: "venus-card",
   daily: "mercury-card",
   undo: "mars-card",
   remote: "earth-card",
   stash: "saturn-card",
-  danger: "neptune-card"
+  danger: "neptune-card",
+  windows: "earth-card",
+  cloud: "venus-card",
+  database: "saturn-card",
+  ai: "mars-card",
+  links: "neptune-card",
+  templates: "uranus-card"
 };
+
+const moduleCategoryOptions = ["all", "config", "daily", "undo", "remote", "stash", "danger"];
 
 const uiText = {
   zh: {
@@ -418,6 +436,90 @@ const seedCards = [
     note: "如果出现冲突，解决后 git cherry-pick --continue；放弃则 git cherry-pick --abort。",
     noteEn: "If conflicts occur, resolve them and run git cherry-pick --continue. Abort with git cherry-pick --abort.",
     tags: ["git", "cherry-pick", "分支", "提交"]
+  },
+  {
+    id: "windows-sleep-1930",
+    module: "windows",
+    title: "晚上 7 点半进入睡眠",
+    titleEn: "Sleep at 19:30",
+    category: "windows",
+    risk: "Check First",
+    scenario: "临时需要让电脑按固定时间休眠时使用，适合放在系统命令模块里。",
+    scenarioEn: "Use when the PC should go to sleep at a fixed time.",
+    command: 'schtasks /create /tn "Sleep at 19:30" /tr "rundll32.exe powrprof.dll,SetSuspendState 0,1,0" /sc daily /st 19:30',
+    note: "如果电脑开启了快速启动/休眠设置，SetSuspendState 的表现可能和预期不同。",
+    noteEn: "SetSuspendState can behave differently depending on hibernation and power settings.",
+    tags: ["windows", "sleep", "schtasks", "休眠"]
+  },
+  {
+    id: "cloud-cloudflare-pages-root",
+    module: "cloud",
+    title: "Cloudflare Pages 静态站点设置",
+    titleEn: "Cloudflare Pages static site settings",
+    category: "cloud",
+    risk: "Safe",
+    scenario: "纯 HTML/CSS/JS 项目从 GitHub 部署到 Cloudflare Pages 时快速对照。",
+    scenarioEn: "Quick reference when deploying a plain HTML/CSS/JS site from GitHub to Cloudflare Pages.",
+    command: "Framework preset: None\nBuild command: \nBuild output directory: /",
+    note: "这个工作站当前就是静态站点，通常不需要构建命令。",
+    noteEn: "This workstation is a static site, so it usually does not need a build command.",
+    tags: ["cloudflare", "pages", "github", "deploy"]
+  },
+  {
+    id: "database-supabase-rls-check",
+    module: "database",
+    title: "检查 Supabase 表是否开启 RLS",
+    titleEn: "Check Supabase RLS status",
+    category: "database",
+    risk: "Safe",
+    scenario: "建完表和策略后，用来快速确认 public schema 里的表有没有开启行级安全。",
+    scenarioEn: "Use after creating tables and policies to verify row-level security in the public schema.",
+    command: "select tablename, rowsecurity\nfrom pg_tables\nwhere schemaname = 'public';",
+    note: "个人站也建议开 RLS，再用 user_id 做隔离。",
+    noteEn: "RLS is still recommended for a personal site, usually isolated by user_id.",
+    tags: ["supabase", "rls", "sql", "database"]
+  },
+  {
+    id: "ai-review-prompt",
+    module: "ai",
+    title: "让 AI 做页面审查",
+    titleEn: "Ask AI to review a page",
+    category: "ai",
+    risk: "Safe",
+    scenario: "页面看着别扭但说不清原因时，用这个提示词让 AI 从用户体验角度挑问题。",
+    scenarioEn: "Use when a page feels off and you want an AI review from a user-experience perspective.",
+    command: "请以专业产品设计和前端体验审核的角度审查这个页面：\n1. 先指出最影响使用体验的问题\n2. 再指出视觉、布局、交互、文案上的问题\n3. 最后给出优先级明确的修改建议\n不要写空泛赞美，直接说问题。",
+    note: "适合你现在这种持续打磨风格基调的流程。",
+    noteEn: "Useful for iterative visual and UX refinement.",
+    tags: ["ai", "prompt", "review", "ux"]
+  },
+  {
+    id: "links-workstation-stack",
+    module: "links",
+    title: "Workstation 技术栈入口",
+    titleEn: "Workstation stack links",
+    category: "links",
+    risk: "Safe",
+    scenario: "把这个站点常用后台入口放在一起，换设备时不用到处找。",
+    scenarioEn: "Keep common project admin links together for quick access on any device.",
+    command: "GitHub: https://github.com/ggbondgh/nanstar-workstation\nCloudflare: https://dash.cloudflare.com/\nSupabase: https://supabase.com/dashboard",
+    note: "后面可以把链接做成真正可点击的模块，现在先保留可复制文本。",
+    noteEn: "These can become real clickable links later; for now they are copyable text.",
+    tags: ["links", "github", "cloudflare", "supabase"]
+  },
+  {
+    id: "templates-commit-message",
+    module: "templates",
+    title: "提交说明模板",
+    titleEn: "Commit message template",
+    category: "templates",
+    risk: "Safe",
+    scenario: "不想每次临时想 commit message 时，直接套这个格式。",
+    scenarioEn: "Use when you do not want to invent a commit message format every time.",
+    command: "类型：简短说明\n\n改动：\n- \n\n验证：\n- ",
+    note: "模板模块以后可以放日报、复盘、PR 描述、AI 提示词等常用文本。",
+    noteEn: "The template module can later hold daily logs, reviews, PR descriptions, and prompts.",
+    tags: ["template", "commit", "work"]
   }
 ];
 
@@ -514,6 +616,7 @@ const elements = {
 };
 
 const state = {
+  module: "git",
   category: "all",
   search: "",
   favoritesOnly: false,
@@ -540,7 +643,13 @@ initSync();
 function bindEvents() {
   elements.navItems.forEach((button) => {
     button.addEventListener("click", () => {
-      state.category = button.dataset.category || "all";
+      const nextModule = moduleMeta[button.dataset.module] ? button.dataset.module : "git";
+      if (state.module !== nextModule) {
+        state.search = "";
+        if (elements.quickSearch) elements.quickSearch.value = "";
+      }
+      state.module = nextModule;
+      state.category = "all";
       state.favoritesOnly = false;
       syncCategoryUi();
       render();
@@ -562,6 +671,7 @@ function bindEvents() {
   elements.quickFilters?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-filter]");
     if (!button) return;
+    if (state.module !== "git") return;
     const nextCategory = button.dataset.filter || "all";
     state.category = state.category === nextCategory ? "all" : nextCategory;
     state.favoritesOnly = false;
@@ -577,6 +687,7 @@ function bindEvents() {
   });
 
   elements.addCardButton?.addEventListener("click", () => {
+    renderCardCategoryOptions();
     elements.cardDialog?.showModal();
     elements.cardForm?.elements.title?.focus();
   });
@@ -731,6 +842,7 @@ function bindEvents() {
 function render() {
   const cards = getAllCards();
   const visibleCards = filterCards(cards);
+  const moduleCards = cards.filter((card) => getCardModule(card) === state.module);
   if (state.selectedId && !visibleCards.some((card) => card.id === state.selectedId)) {
     state.selectedId = visibleCards[0]?.id || null;
   }
@@ -741,26 +853,29 @@ function render() {
     state.selectedId = visibleCards[0].id;
   }
 
-  renderHeader(visibleCards.length, cards.length);
+  renderHeader(visibleCards.length, moduleCards.length);
   renderCards(visibleCards);
   renderDetail(cards.find((card) => card.id === state.selectedId));
 }
 
 function renderHeader(visibleCount, totalCount) {
-  const meta = categoryMeta[state.category] || categoryMeta.all;
+  const module = moduleMeta[state.module] || moduleMeta.git;
+  const category = categoryMeta[state.category] || categoryMeta.all;
   const t = getText();
   const modeLabel = state.favoritesOnly ? t.favorites : null;
-  elements.pageEyebrow.textContent = modeLabel ? `${modeLabel} / Favorites` : meta.eyebrow;
-  elements.pageTitle.textContent = modeLabel ? t.favoriteCards : localizeMeta(meta, "title");
+  elements.pageEyebrow.textContent = modeLabel ? `${localizeMeta(module, "label")} / ${modeLabel}` : module.eyebrow;
+  elements.pageTitle.textContent = modeLabel ? t.favoriteCards : localizeMeta(module, "title");
   elements.resultEyebrow.textContent = modeLabel ? t.favoriteCards : t.resultEyebrow;
-  elements.resultTitle.textContent = modeLabel ? t.favoritedCommands : state.category === "all" ? t.frequentGit : `${localizeMeta(meta, "label")}${state.language === "zh" ? "卡片" : " Cards"}`;
+  elements.resultTitle.textContent = getResultTitle(module, category, modeLabel, t);
   elements.resultCount.textContent = `${visibleCount} ${t.cardsUnit}`;
   if (elements.totalCount) elements.totalCount.textContent = String(totalCount);
-  if (elements.favoriteCount) elements.favoriteCount.textContent = String(favorites.size);
+  if (elements.favoriteCount) elements.favoriteCount.textContent = String(getModuleFavoriteCount(state.module));
   if (elements.customCount) elements.customCount.textContent = String(customCards.length);
   if (elements.visibleCount) elements.visibleCount.textContent = String(visibleCount);
   elements.showFavorites?.classList.toggle("active", state.favoritesOnly);
   if (elements.showFavorites) elements.showFavorites.textContent = state.favoritesOnly ? t.exitFavorites : t.favorites;
+  if (elements.quickSearch) elements.quickSearch.placeholder = localizeMeta(module, "searchPlaceholder") || t.searchPlaceholder;
+  document.querySelector(".focus-copy h3").textContent = localizeMeta(module, "focusTitle") || t.focusTitle;
   syncCategoryUi();
 }
 
@@ -778,7 +893,9 @@ function renderCards(cards) {
 
   elements.cardGrid.innerHTML = cards.map((card) => {
     const isFavorite = favorites.has(card.id);
-    const categoryLabel = localizeMeta(categoryMeta[card.category], "label") || card.category;
+    const module = moduleMeta[getCardModule(card)] || moduleMeta.git;
+    const categoryLabel = getCardCategoryLabel(card);
+    const moduleLabel = localizeMeta(module, "label") || t.git;
     const commandLines = card.command.split("\n");
     const isMultiLine = commandLines.length > 1;
     const commandHtml = commandLines.map((line) =>
@@ -789,10 +906,10 @@ function renderCards(cards) {
     const titleHtml = state.search ? highlightText(title, state.search) : escapeHtml(title);
     const noteHtml = state.search ? highlightText(scenario, state.search) : escapeHtml(scenario);
     return `
-      <article class="command-card ${cardClassByCategory[card.category] || "mercury-card"} ${state.selectedId === card.id ? "selected" : ""}" data-id="${escapeAttr(card.id)}" tabindex="0">
+      <article class="command-card ${getCardClass(card)} ${state.selectedId === card.id ? "selected" : ""}" data-id="${escapeAttr(card.id)}" tabindex="0">
         <header>
           <div class="card-head">
-            <span class="card-type">${escapeHtml(categoryLabel)} / ${card.custom ? t.custom : t.git}</span>
+            <span class="card-type">${escapeHtml(categoryLabel)} / ${card.custom ? t.custom : moduleLabel}</span>
             <h4>${titleHtml}</h4>
           </div>
         </header>
@@ -824,7 +941,7 @@ function renderDetail(card) {
     return;
   }
 
-  const categoryLabel = localizeMeta(categoryMeta[card.category], "label") || card.category;
+  const categoryLabel = getCardCategoryLabel(card);
   const title = localizeCard(card, "title");
   const note = localizeCard(card, "note");
   const scenario = localizeCard(card, "scenario");
@@ -866,15 +983,61 @@ function localizeCard(card, key) {
   return card[key] || "";
 }
 
+function getCardModule(card) {
+  return moduleMeta[card?.module] ? card.module : "git";
+}
+
+function getCardClass(card) {
+  return cardClassByCategory[card.category] || cardClassByCategory[getCardModule(card)] || "mercury-card";
+}
+
+function getCardCategoryLabel(card) {
+  const category = categoryMeta[card.category];
+  if (category) return localizeMeta(category, "label");
+  const module = moduleMeta[getCardModule(card)];
+  return localizeMeta(module, "label") || card.category || "";
+}
+
+function getModuleFavoriteCount(moduleKey) {
+  return getAllCards().filter((card) => getCardModule(card) === moduleKey && favorites.has(card.id)).length;
+}
+
+function getResultTitle(module, category, modeLabel, t) {
+  if (modeLabel) return t.favoritedCommands;
+  if (state.module === "git") {
+    return state.category === "all"
+      ? t.frequentGit
+      : `${localizeMeta(category, "label")}${state.language === "zh" ? "卡片" : " Cards"}`;
+  }
+  return state.language === "zh"
+    ? `${localizeMeta(module, "label")} 样例`
+    : `${localizeMeta(module, "label")} Samples`;
+}
+
+function renderCardCategoryOptions() {
+  const select = elements.cardForm?.elements.category;
+  if (!select) return;
+
+  const options = state.module === "git" ? moduleCategoryOptions.filter((key) => key !== "all") : [state.module];
+  select.innerHTML = options.map((key) => {
+    const label = state.module === "git"
+      ? localizeMeta(categoryMeta[key], "label")
+      : localizeMeta(moduleMeta[key], "label");
+    return `<option value="${escapeAttr(key)}">${escapeHtml(label)}</option>`;
+  }).join("");
+}
+
 function filterCards(cards) {
   const query = state.search.toLowerCase();
   const filtered = cards.filter((card) => {
-    const matchesCategory = state.category === "all" || card.category === state.category;
+    const matchesModule = getCardModule(card) === state.module;
+    const matchesCategory = state.module !== "git" || state.category === "all" || card.category === state.category;
     const matchesFavorite = !state.favoritesOnly || favorites.has(card.id);
     const haystack = [
       card.title,
       card.titleEn,
       card.category,
+      getCardModule(card),
       card.scenario,
       card.scenarioEn,
       card.command,
@@ -883,7 +1046,7 @@ function filterCards(cards) {
       card.tags.join(" ")
     ].join(" ").toLowerCase();
     const matchesSearch = !query || haystack.includes(query);
-    return matchesCategory && matchesFavorite && matchesSearch;
+    return matchesModule && matchesCategory && matchesFavorite && matchesSearch;
   });
 
   if (query) {
@@ -910,8 +1073,13 @@ function relevanceScore(card, query) {
 
 function syncCategoryUi() {
   elements.navItems.forEach((button) => {
-    button.classList.toggle("active", (button.dataset.category || "all") === state.category);
+    button.classList.toggle("active", (button.dataset.module || "git") === state.module);
   });
+  if (elements.quickFilters) {
+    const showFilters = state.module === "git";
+    elements.quickFilters.hidden = !showFilters;
+    elements.quickFilters.setAttribute("aria-hidden", String(!showFilters));
+  }
   elements.quickFilters?.querySelectorAll("[data-filter]").forEach((button) => {
     button.classList.toggle("active", (button.dataset.filter || "") === state.category);
   });
@@ -931,14 +1099,15 @@ function applyLanguage(language) {
   }
 
   document.querySelector(".focus-copy .eyebrow").textContent = t.focusEyebrow;
-  document.querySelector(".focus-copy h3").textContent = t.focusTitle;
-  elements.quickSearch.placeholder = t.searchPlaceholder;
+  const currentModule = moduleMeta[state.module] || moduleMeta.git;
+  document.querySelector(".focus-copy h3").textContent = localizeMeta(currentModule, "focusTitle") || t.focusTitle;
+  elements.quickSearch.placeholder = localizeMeta(currentModule, "searchPlaceholder") || t.searchPlaceholder;
   elements.quickSearch.setAttribute("aria-label", t.searchAria);
   elements.clearSearch.textContent = t.clear;
   elements.addCardButton.textContent = t.newCard;
 
   elements.navItems.forEach((button) => {
-    const meta = categoryMeta[button.dataset.category] || categoryMeta.all;
+    const meta = moduleMeta[button.dataset.module] || moduleMeta.git;
     button.querySelector("span").textContent = localizeMeta(meta, "label");
     button.querySelector("small").textContent = localizeMeta(meta, "sub");
   });
@@ -972,10 +1141,7 @@ function applyLanguage(language) {
   form.elements.scenario.placeholder = t.scenarioPlaceholder;
   form.elements.note.placeholder = t.notePlaceholder;
   form.elements.tags.placeholder = t.tagsPlaceholder;
-  Array.from(form.elements.category.options).forEach((option) => {
-    const meta = categoryMeta[option.value] || categoryMeta.daily;
-    option.textContent = localizeMeta(meta, "label");
-  });
+  renderCardCategoryOptions();
 
   renderSyncUi();
   clearCelestialSelection();
@@ -1264,7 +1430,11 @@ function saveCustomCard(formData) {
     return;
   }
 
-  const category = clean(formData.get("category")) || "daily";
+  const activeModule = moduleMeta[state.module] ? state.module : "git";
+  const rawCategory = clean(formData.get("category"));
+  const category = activeModule === "git"
+    ? (categoryMeta[rawCategory] && rawCategory !== "all" ? rawCategory : "daily")
+    : activeModule;
   const tags = clean(formData.get("tags"))
     .split(/[,\uFF0C]/)
     .map((tag) => tag.trim())
@@ -1272,8 +1442,9 @@ function saveCustomCard(formData) {
 
   const card = {
     id: `custom-${Date.now()}`,
+    module: activeModule,
     title,
-    category: categoryMeta[category] ? category : "daily",
+    category,
     risk: "Safe",
     scenario: clean(formData.get("scenario")) || t.customScenario,
     command,
@@ -1285,7 +1456,9 @@ function saveCustomCard(formData) {
   customCards = [card, ...customCards];
   writeJson(storageKeys.customCards, customCards);
   state.selectedId = card.id;
+  state.module = activeModule;
   state.category = card.category;
+  if (activeModule !== "git") state.category = "all";
   state.favoritesOnly = false;
   elements.cardForm.reset();
   elements.cardDialog.close("saved");

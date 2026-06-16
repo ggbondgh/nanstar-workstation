@@ -347,6 +347,7 @@ body.theme-light .nav-item.active {
 .mars-nav { --planet-color: var(--mars); }
 .neptune-nav { --planet-color: var(--neptune); }
 .saturn-nav { --planet-color: var(--saturn); }
+.uranus-nav { --planet-color: var(--uranus); }
 
 .focus-panel,
 .command-card,
@@ -671,6 +672,10 @@ body.theme-light .search-row input {
   justify-content: flex-start;
 }
 
+.signal-row[hidden] {
+  display: none;
+}
+
 .signal-row button {
   min-height: 30px;
   padding: 0 10px;
@@ -781,6 +786,7 @@ body.theme-light .command-card {
 .venus-card { --card-color: var(--venus); }
 .saturn-card { --card-color: var(--saturn); }
 .neptune-card { --card-color: var(--neptune); }
+.uranus-card { --card-color: var(--uranus); }
 
 .card-head {
   display: grid;
