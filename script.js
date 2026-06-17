@@ -3,6 +3,7 @@ const storageKeys = {
   language: "nanstar-workstation-language",
   favorites: "nanstar-workstation-favorites",
   customCards: "nanstar-workstation-custom-cards",
+  editedCards: "nanstar-workstation-edited-cards",
   deletedCards: "nanstar-workstation-deleted-cards",
   recentCards: "nanstar-workstation-recent",
   cardFrequency: "nanstar-workstation-frequency",
@@ -112,6 +113,7 @@ const uiText = {
     copy: "复制",
     copyAll: "复制全部",
     copyLine: "复制此行",
+    editAction: "编辑",
     deleteAction: "删除",
     deleteConfirm: "确认",
     deleteHint: "再次点击确认删除",
@@ -139,6 +141,8 @@ const uiText = {
     planetHint: "全屏模式会保持转动。点击太阳或行星后，轨道暂停并显示简介；点击空白区域后继续转动。",
     formCustomEyebrow: "Custom Card / 自定义",
     formCustomTitle: "添加自定义卡片",
+    formEditEyebrow: "Edit Card / 编辑",
+    formEditTitle: "编辑卡片",
     formClose: "关闭",
     formTitle: "标题",
     formCategory: "分类",
@@ -147,6 +151,7 @@ const uiText = {
     formNote: "备注",
     formTags: "标签",
     saveCard: "保存卡片",
+    updateCard: "保存修改",
     titlePlaceholder: "例如：撤销最近一次 commit",
     scenarioPlaceholder: "什么时候用这张卡",
     notePlaceholder: "执行前要注意什么",
@@ -154,6 +159,7 @@ const uiText = {
     customScenario: "自定义场景",
     titleRequired: "标题和命令不能为空",
     savedCard: "卡片已保存",
+    updatedCard: "卡片已更新",
     favoriteAdded: "已加入收藏",
     favoriteRemoved: "已取消收藏",
     copied: "命令已复制",
@@ -206,6 +212,7 @@ const uiText = {
     copy: "Copy",
     copyAll: "Copy All",
     copyLine: "Copy this line",
+    editAction: "Edit",
     deleteAction: "Delete",
     deleteConfirm: "Confirm",
     deleteHint: "Click again to delete",
@@ -233,6 +240,8 @@ const uiText = {
     planetHint: "Fullscreen mode keeps orbiting. Click the Sun or a planet to pause and show a short note; click empty space to resume.",
     formCustomEyebrow: "Custom Card",
     formCustomTitle: "Add Custom Card",
+    formEditEyebrow: "Edit Card",
+    formEditTitle: "Edit Card",
     formClose: "Close",
     formTitle: "Title",
     formCategory: "Category",
@@ -241,6 +250,7 @@ const uiText = {
     formNote: "Note",
     formTags: "Tags",
     saveCard: "Save Card",
+    updateCard: "Save Changes",
     titlePlaceholder: "Example: undo last commit",
     scenarioPlaceholder: "When to use this card",
     notePlaceholder: "What to check before running it",
@@ -248,6 +258,7 @@ const uiText = {
     customScenario: "Custom scenario",
     titleRequired: "Title and command are required",
     savedCard: "Card saved",
+    updatedCard: "Card updated",
     favoriteAdded: "Added to favorites",
     favoriteRemoved: "Removed from favorites",
     copied: "Command copied",
@@ -913,6 +924,7 @@ const state = {
   search: "",
   favoritesOnly: false,
   selectedId: null,
+  editingId: null,
   language: localStorage.getItem(storageKeys.language) === "en" ? "en" : "zh",
   syncUser: null,
   syncStatus: "offline",
@@ -922,6 +934,7 @@ const state = {
 
 let favorites = new Set(readJson(storageKeys.favorites, []));
 let customCards = readJson(storageKeys.customCards, []).filter(isValidCustomCard);
+let editedCards = readJson(storageKeys.editedCards, []).filter(isValidCustomCard);
 let deletedCards = new Set(readJson(storageKeys.deletedCards, []));
 let recentCards = readJson(storageKeys.recentCards, []);
 let cardFrequency = readJson(storageKeys.cardFrequency, {});
@@ -980,9 +993,7 @@ function bindEvents() {
   });
 
   elements.addCardButton?.addEventListener("click", () => {
-    renderCardCategoryOptions();
-    elements.cardDialog?.showModal();
-    elements.cardForm?.elements.title?.focus();
+    openCardDialog();
   });
 
   elements.syncButton?.addEventListener("click", () => {
@@ -1009,7 +1020,7 @@ function bindEvents() {
 
   elements.cardDialog?.addEventListener("close", () => {
     if (elements.cardDialog.returnValue !== "default") {
-      elements.cardForm?.reset();
+      resetCardDialog();
     }
   });
 
@@ -1020,7 +1031,7 @@ function bindEvents() {
       elements.cardDialog.close("cancel");
       return;
     }
-    saveCustomCard(new FormData(elements.cardForm));
+    saveCardForm(new FormData(elements.cardForm));
   });
 
   elements.themeToggle?.addEventListener("click", () => {
@@ -1044,6 +1055,7 @@ function bindEvents() {
     const copyLineButton = event.target.closest("[data-action='copy-line']");
     const copyButton = event.target.closest("[data-action='copy']");
     const favoriteButton = event.target.closest("[data-action='favorite']");
+    const editButton = event.target.closest("[data-action='edit']");
     const deleteButton = event.target.closest("[data-action='delete']");
     const card = event.target.closest(".command-card");
 
@@ -1066,6 +1078,12 @@ function bindEvents() {
     if (favoriteButton) {
       event.stopPropagation();
       toggleFavorite(favoriteButton.dataset.id || "");
+      return;
+    }
+
+    if (editButton) {
+      event.stopPropagation();
+      openEditCardDialog(editButton.dataset.id || "");
       return;
     }
 
@@ -1223,6 +1241,7 @@ function renderCards(cards) {
           <div class="actions">
             <button class="copy-button favorite-button ${isFavorite ? "is-favorite" : ""}" type="button" data-action="favorite" data-id="${escapeAttr(card.id)}" aria-label="${escapeAttr(t.favoriteAction)} ${escapeAttr(title)}">${isFavorite ? "★" : "☆"}</button>
             <button class="copy-button" type="button" data-action="copy" data-command="${escapeAttr(card.command)}" data-id="${escapeAttr(card.id)}">${isMultiLine ? t.copyAll : t.copy}</button>
+            <button class="copy-button edit-button" type="button" data-action="edit" data-id="${escapeAttr(card.id)}" aria-label="${escapeAttr(t.editAction)} ${escapeAttr(title)}">${escapeHtml(t.editAction)}</button>
             <button class="copy-button delete-button" type="button" data-action="delete" data-id="${escapeAttr(card.id)}" aria-label="${escapeAttr(t.deleteAction)} ${escapeAttr(title)}">${escapeHtml(t.deleteAction)}</button>
           </div>
         </footer>
@@ -1267,7 +1286,13 @@ function renderDetail(card) {
 }
 
 function getAllCards() {
-  return [...seedCards, ...customCards].filter((card) => !deletedCards.has(card.id));
+  const edits = new Map(editedCards.map((card) => [card.id, card]));
+  return [...seedCards, ...customCards]
+    .filter((card) => !deletedCards.has(card.id))
+    .map((card) => {
+      const edited = edits.get(card.id);
+      return edited ? { ...card, ...edited, id: card.id, custom: Boolean(card.custom || edited.custom), edited: true } : card;
+    });
 }
 
 function getCardClient(card) {
@@ -1290,6 +1315,7 @@ function localizeMeta(meta, key) {
 
 function localizeCard(card, key) {
   if (!card) return "";
+  if (card.edited) return card[key] || card[`${key}En`] || "";
   if (state.language === "en" && !card.custom) return card[`${key}En`] || card[key] || "";
   return card[key] || "";
 }
@@ -1350,11 +1376,19 @@ function renderCardCategoryOptions() {
   const select = elements.cardForm?.elements.category;
   if (!select) return;
 
-  const options = state.module === "git" ? moduleCategoryOptions.filter((key) => key !== "all") : [state.module];
+  const editingCard = state.editingId ? getAllCards().find((card) => card.id === state.editingId) : null;
+  const activeModule = editingCard ? getCardModule(editingCard) : state.module;
+  const options = activeModule === "git"
+    ? moduleCategoryOptions.filter((key) => key !== "all")
+    : activeModule === "clients"
+      ? clientCategoryOptions.filter((key) => key !== "all")
+      : [activeModule];
   select.innerHTML = options.map((key) => {
-    const label = state.module === "git"
+    const label = activeModule === "git"
       ? localizeMeta(categoryMeta[key], "label")
-      : localizeMeta(moduleMeta[key], "label");
+      : activeModule === "clients"
+        ? localizeClientCategory(key)
+        : localizeMeta(moduleMeta[key], "label");
     return `<option value="${escapeAttr(key)}">${escapeHtml(label)}</option>`;
   }).join("");
 }
@@ -1507,10 +1541,8 @@ function applyLanguage(language) {
   elements.solarClose.textContent = t.close;
   elements.solarClose.setAttribute("aria-label", t.closeSolar);
 
-  document.querySelector(".card-form .eyebrow").textContent = t.formCustomEyebrow;
-  document.querySelector(".card-form .section-head h3").textContent = t.formCustomTitle;
+  applyCardDialogText();
   document.querySelector(".card-form button[value='cancel']").textContent = t.formClose;
-  document.querySelector(".card-form .primary-button").textContent = t.saveCard;
   document.querySelectorAll("[data-i18n]").forEach((node) => {
     const key = node.dataset.i18n;
     if (t[key]) node.textContent = t[key];
@@ -1682,6 +1714,7 @@ function getLocalPayload() {
     language: state.language,
     favorites: Array.from(favorites),
     customCards,
+    editedCards,
     deletedCards: Array.from(deletedCards),
     recentCards,
     cardFrequency,
@@ -1704,6 +1737,7 @@ function mergeCloudPayload(cloudPayload, localPayload, options = {}) {
     language: preferenceSource.language || localPayload.language,
     favorites: normalizeStringArray(preferenceSource.favorites || localPayload.favorites),
     customCards: mergeCards(cloudPayload.customCards || [], localPayload.customCards || [], deletedCards),
+    editedCards: mergeCards(cloudPayload.editedCards || [], localPayload.editedCards || [], deletedCards),
     deletedCards,
     recentCards: normalizeStringArray(preferenceSource.recentCards || localPayload.recentCards).slice(0, 20),
     cardFrequency: mergeFrequency(cloudPayload.cardFrequency || {}, localPayload.cardFrequency || {}),
@@ -1717,6 +1751,7 @@ function applyCloudPayload(payload) {
 
   favorites = new Set(Array.isArray(payload.favorites) ? payload.favorites : []);
   customCards = (Array.isArray(payload.customCards) ? payload.customCards : []).filter(isValidCustomCard);
+  editedCards = (Array.isArray(payload.editedCards) ? payload.editedCards : []).filter(isValidCustomCard);
   deletedCards = new Set(normalizeStringArray(payload.deletedCards));
   recentCards = Array.isArray(payload.recentCards) ? payload.recentCards.slice(0, 20) : [];
   cardFrequency = payload.cardFrequency && typeof payload.cardFrequency === "object" ? payload.cardFrequency : {};
@@ -1725,6 +1760,7 @@ function applyCloudPayload(payload) {
 
   writeJson(storageKeys.favorites, Array.from(favorites));
   writeJson(storageKeys.customCards, customCards);
+  writeJson(storageKeys.editedCards, editedCards);
   writeJson(storageKeys.deletedCards, Array.from(deletedCards));
   writeJson(storageKeys.recentCards, recentCards);
   writeJson(storageKeys.cardFrequency, cardFrequency);
@@ -1811,48 +1847,176 @@ function renderSyncUi() {
   elements.syncSignUp && (elements.syncSignUp.disabled = !supabaseClient || state.isSyncing);
 }
 
-function saveCustomCard(formData) {
+function openCardDialog(card = null) {
+  state.editingId = card?.id || null;
+  const t = getText();
+  const form = elements.cardForm;
+  if (!form) return;
+  form.reset();
+  renderCardCategoryOptions();
+  if (!card && form.elements.category.options.length) {
+    form.elements.category.value = state.module === "git"
+      ? (state.category !== "all" ? state.category : "daily")
+      : form.elements.category.options[0].value;
+  }
+
+  const eyebrow = form.querySelector(".eyebrow");
+  const title = form.querySelector(".section-head h3");
+  const submit = form.querySelector(".primary-button");
+  if (eyebrow) eyebrow.textContent = card ? t.formEditEyebrow : t.formCustomEyebrow;
+  if (title) title.textContent = card ? t.formEditTitle : t.formCustomTitle;
+  if (submit) submit.textContent = card ? t.updateCard : t.saveCard;
+
+  if (card) {
+    form.elements.title.value = card.title || "";
+    form.elements.category.value = card.category || form.elements.category.value;
+    form.elements.scenario.value = card.scenario || "";
+    form.elements.command.value = card.command || "";
+    form.elements.note.value = card.note || "";
+    form.elements.tags.value = Array.isArray(card.tags) ? card.tags.join(", ") : "";
+  }
+
+  elements.cardDialog?.showModal();
+  form.elements.title?.focus();
+}
+
+function openEditCardDialog(id) {
+  const card = getAllCards().find((item) => item.id === id);
+  if (!card) return;
+  openCardDialog(card);
+}
+
+function resetCardDialog() {
+  state.editingId = null;
+  elements.cardForm?.reset();
+  applyCardDialogText();
+}
+
+function applyCardDialogText() {
+  const t = getText();
+  const form = elements.cardForm;
+  if (!form) return;
+  const eyebrow = form.querySelector(".eyebrow");
+  const title = form.querySelector(".section-head h3");
+  const submit = form.querySelector(".primary-button");
+  if (eyebrow) eyebrow.textContent = state.editingId ? t.formEditEyebrow : t.formCustomEyebrow;
+  if (title) title.textContent = state.editingId ? t.formEditTitle : t.formCustomTitle;
+  if (submit) submit.textContent = state.editingId ? t.updateCard : t.saveCard;
+}
+
+function saveCardForm(formData) {
+  if (state.editingId) {
+    updateCard(state.editingId, formData);
+    return;
+  }
+  saveCustomCard(formData);
+}
+
+function getCardInput(formData, baseCard = null) {
   const t = getText();
   const title = clean(formData.get("title"));
   const command = clean(formData.get("command"));
   if (!title || !command) {
     showToast(t.titleRequired);
-    return;
+    return null;
   }
 
-  const activeModule = moduleMeta[state.module] && state.module !== "clients" ? state.module : "git";
+  const activeModule = baseCard
+    ? getCardModule(baseCard)
+    : moduleMeta[state.module] && state.module !== "clients" ? state.module : "git";
   const rawCategory = clean(formData.get("category"));
   const category = activeModule === "git"
     ? (categoryMeta[rawCategory] && rawCategory !== "all" ? rawCategory : "daily")
-    : activeModule;
+    : activeModule === "clients"
+      ? (clientCategoryMeta[rawCategory] && rawCategory !== "all" ? rawCategory : baseCard?.category || "wk-flow")
+      : activeModule;
   const tags = clean(formData.get("tags"))
     .split(/[,\uFF0C]/)
     .map((tag) => tag.trim())
     .filter(Boolean);
 
+  return {
+    activeModule,
+    category,
+    title,
+    command,
+    scenario: clean(formData.get("scenario")) || t.customScenario,
+    note: clean(formData.get("note")),
+    tags: tags.length ? tags : ["custom"]
+  };
+}
+
+function saveCustomCard(formData) {
+  const input = getCardInput(formData);
+  if (!input) return;
+
   const card = {
     id: `custom-${Date.now()}`,
-    module: activeModule,
-    title,
-    category,
+    module: input.activeModule,
+    title: input.title,
+    category: input.category,
     risk: "Safe",
-    scenario: clean(formData.get("scenario")) || t.customScenario,
-    command,
-    note: clean(formData.get("note")),
-    tags: tags.length ? tags : ["custom"],
+    scenario: input.scenario,
+    command: input.command,
+    note: input.note,
+    tags: input.tags,
     custom: true
   };
 
   customCards = [card, ...customCards];
   writeJson(storageKeys.customCards, customCards);
   state.selectedId = card.id;
-  state.module = activeModule;
+  state.module = input.activeModule;
   state.category = card.category;
-  if (activeModule !== "git") state.category = "all";
+  if (input.activeModule !== "git") state.category = "all";
   state.favoritesOnly = false;
   elements.cardForm.reset();
   elements.cardDialog.close("saved");
-  showToast(t.savedCard);
+  showToast(getText().savedCard);
+  render();
+  touchLocalState();
+  scheduleCloudSync({ preferLocal: true });
+}
+
+function updateCard(id, formData) {
+  const currentCard = getAllCards().find((card) => card.id === id);
+  if (!currentCard) return;
+  const input = getCardInput(formData, currentCard);
+  if (!input) return;
+
+  const patch = {
+    id,
+    module: getCardModule(currentCard),
+    client: getCardClient(currentCard) || undefined,
+    title: input.title,
+    category: input.category,
+    risk: currentCard.risk || "Safe",
+    scenario: input.scenario,
+    command: input.command,
+    note: input.note,
+    tags: input.tags,
+    custom: Boolean(currentCard.custom)
+  };
+
+  if (currentCard.custom) {
+    customCards = customCards.map((card) => card.id === id ? { ...card, ...patch, custom: true } : card);
+    writeJson(storageKeys.customCards, customCards);
+  } else {
+    editedCards = [
+      { ...patch, custom: false },
+      ...editedCards.filter((card) => card.id !== id)
+    ];
+    writeJson(storageKeys.editedCards, editedCards);
+  }
+
+  state.selectedId = id;
+  state.editingId = null;
+  state.module = getCardModule(patch);
+  state.category = state.module === "git" ? patch.category : "all";
+  state.favoritesOnly = false;
+  elements.cardForm.reset();
+  elements.cardDialog.close("saved");
+  showToast(getText().updatedCard);
   render();
   touchLocalState();
   scheduleCloudSync({ preferLocal: true });
@@ -1910,6 +2074,8 @@ function deleteCard(id) {
     writeJson(storageKeys.customCards, customCards);
   }
 
+  editedCards = editedCards.filter((item) => item.id !== id);
+  writeJson(storageKeys.editedCards, editedCards);
   favorites.delete(id);
   recentCards = recentCards.filter((cid) => cid !== id);
   delete cardFrequency[id];
