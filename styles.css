@@ -345,6 +345,7 @@ body.theme-light .nav-item.active {
 .venus-nav { --planet-color: var(--venus); }
 .earth-nav { --planet-color: var(--earth); }
 .mars-nav { --planet-color: var(--mars); }
+.jupiter-nav { --planet-color: var(--jupiter); }
 .neptune-nav { --planet-color: var(--neptune); }
 .saturn-nav { --planet-color: var(--saturn); }
 .uranus-nav { --planet-color: var(--uranus); }
@@ -440,6 +441,53 @@ body.theme-light .nav-item.active {
   justify-content: flex-end;
 }
 
+.client-controls {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  justify-self: end;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 4px 5px 4px 12px;
+}
+
+.focus-panel.has-client-controls {
+  position: relative;
+  padding-top: 20px;
+}
+
+.focus-panel > .client-controls {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 3;
+  box-shadow: 0 10px 24px rgba(3, 8, 18, 0.16);
+}
+
+.focus-panel.has-client-controls .search-console {
+  padding-top: 44px;
+}
+
+.client-controls label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.client-controls select {
+  min-height: 30px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  border-radius: 6px;
+  background: rgba(8, 12, 22, 0.74);
+  color: var(--text);
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .primary-button,
 .ghost-button,
 .copy-button,
@@ -501,10 +549,16 @@ body.theme-light .ghost-button,
 body.theme-light .copy-button,
 body.theme-light .solar-expand,
 body.theme-light .solar-close,
-body.theme-light .signal-row button {
+body.theme-light .signal-row button,
+body.theme-light .client-controls {
   border-color: rgba(34, 121, 168, 0.18);
   background: rgba(236, 250, 255, 0.46);
   color: #28506d;
+}
+
+body.theme-light .client-controls select {
+  background: rgba(255, 255, 255, 0.62);
+  color: #0f3a56;
 }
 
 .ghost-button,
@@ -787,6 +841,7 @@ body.theme-light .command-card {
 .saturn-card { --card-color: var(--saturn); }
 .neptune-card { --card-color: var(--neptune); }
 .uranus-card { --card-color: var(--uranus); }
+.jupiter-card { --card-color: var(--jupiter); }
 
 .card-head {
   display: grid;
@@ -1003,6 +1058,19 @@ body.theme-light .copy-line-button:hover {
 .favorite-button.is-favorite {
   border-color: color-mix(in srgb, var(--accent-2) 55%, transparent);
   color: var(--accent-2);
+}
+
+.delete-button {
+  min-width: 52px;
+  border-color: color-mix(in srgb, var(--accent-3) 22%, var(--line));
+  color: color-mix(in srgb, var(--accent-3) 70%, var(--muted));
+}
+
+.delete-button:hover,
+.delete-button.is-confirming {
+  border-color: color-mix(in srgb, var(--accent-3) 58%, transparent);
+  background: color-mix(in srgb, var(--accent-3) 12%, rgba(255, 255, 255, 0.045));
+  color: var(--accent-3);
 }
 
 .status-panel {
@@ -1506,6 +1574,14 @@ body.theme-light .sync-status {
   .focus-panel,
   .workspace-grid {
     grid-template-columns: 1fr;
+  }
+
+  .focus-panel.has-client-controls {
+    padding-top: 64px;
+  }
+
+  .focus-panel.has-client-controls .search-console {
+    padding-top: 0;
   }
 
   .sidebar {

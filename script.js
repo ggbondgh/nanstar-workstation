@@ -3,6 +3,7 @@ const storageKeys = {
   language: "nanstar-workstation-language",
   favorites: "nanstar-workstation-favorites",
   customCards: "nanstar-workstation-custom-cards",
+  deletedCards: "nanstar-workstation-deleted-cards",
   recentCards: "nanstar-workstation-recent",
   cardFrequency: "nanstar-workstation-frequency",
   syncEmail: "nanstar-workstation-sync-email",
@@ -33,12 +34,28 @@ const categoryMeta = {
 
 const moduleMeta = {
   git: { label: "Git", labelEn: "Git", sub: "命令速查", subEn: "Command cards", eyebrow: "Mercury Orbit / Git Module", title: "Git 命令工作台", titleEn: "Git Command Workstation", focusTitle: "快速定位 Git 命令", focusTitleEn: "Find Git Commands Fast", searchPlaceholder: "搜：撤销 / 邮箱 / rebase / index.lock", searchPlaceholderEn: "Search: undo / email / rebase / index.lock" },
+  clients: { label: "客户", labelEn: "Clients", sub: "客户项目", subEn: "Client work", eyebrow: "Jupiter Orbit / Client Workspace", title: "客户工作区", titleEn: "Client Workspace", focusTitle: "快速定位客户资料", focusTitleEn: "Find Client Notes Fast", searchPlaceholder: "搜：拉取 / 编译 / 烧录 / NV / SSH", searchPlaceholderEn: "Search: clone / build / package / NV / SSH" },
   windows: { label: "Windows", labelEn: "Windows", sub: "系统命令", subEn: "System commands", eyebrow: "Earth Orbit / Windows Module", title: "Windows 与 PowerShell", titleEn: "Windows & PowerShell", focusTitle: "快速定位系统命令", focusTitleEn: "Find System Commands Fast", searchPlaceholder: "搜：休眠 / 端口 / 进程 / IP", searchPlaceholderEn: "Search: sleep / port / process / IP" },
   cloud: { label: "Cloud", labelEn: "Cloud", sub: "部署入口", subEn: "Deploy notes", eyebrow: "Venus Orbit / Cloud Module", title: "GitHub 与 Cloudflare", titleEn: "GitHub & Cloudflare", focusTitle: "快速定位部署步骤", focusTitleEn: "Find Deploy Steps Fast", searchPlaceholder: "搜：Cloudflare / Pages / GitHub / main", searchPlaceholderEn: "Search: Cloudflare / Pages / GitHub / main" },
   database: { label: "Database", labelEn: "Database", sub: "数据同步", subEn: "Data sync", eyebrow: "Saturn Orbit / Data Module", title: "Supabase 与数据同步", titleEn: "Supabase & Data Sync", focusTitle: "快速定位数据库操作", focusTitleEn: "Find Database Ops Fast", searchPlaceholder: "搜：RLS / policy / auth / table", searchPlaceholderEn: "Search: RLS / policy / auth / table" },
   ai: { label: "AI", labelEn: "AI", sub: "提示模板", subEn: "Prompt templates", eyebrow: "Mars Orbit / AI Module", title: "AI 提示模板", titleEn: "AI Prompt Templates", focusTitle: "快速定位提示词", focusTitleEn: "Find Prompt Templates Fast", searchPlaceholder: "搜：审查 / 总结 / 翻译 / 代码", searchPlaceholderEn: "Search: review / summary / translate / code" },
   links: { label: "Links", labelEn: "Links", sub: "常用入口", subEn: "Quick links", eyebrow: "Neptune Orbit / Link Module", title: "常用链接入口", titleEn: "Quick Links", focusTitle: "快速定位入口", focusTitleEn: "Find Links Fast", searchPlaceholder: "搜：GitHub / Supabase / Cloudflare", searchPlaceholderEn: "Search: GitHub / Supabase / Cloudflare" },
   templates: { label: "Templates", labelEn: "Templates", sub: "工作模板", subEn: "Work templates", eyebrow: "Uranus Orbit / Template Module", title: "个人工作模板", titleEn: "Personal Templates", focusTitle: "快速定位模板", focusTitleEn: "Find Templates Fast", searchPlaceholder: "搜：日报 / 提交 / 项目 / 复盘", searchPlaceholderEn: "Search: daily / commit / project / review" }
+};
+
+const clientMeta = {
+  wk: { label: "微克", labelEn: "WK", title: "微克客户资料", titleEn: "WK Client Notes" }
+};
+
+const clientCategoryMeta = {
+  all: { label: "全部", labelEn: "All" },
+  "wk-flow": { label: "流程", labelEn: "Flow" },
+  "wk-paths": { label: "路径", labelEn: "Paths" },
+  "wk-interfaces": { label: "接口", labelEn: "Interfaces" },
+  "wk-snippets": { label: "片段", labelEn: "Snippets" },
+  "wk-test": { label: "测试", labelEn: "Test" },
+  "wk-ops": { label: "运维", labelEn: "Ops" },
+  "wk-checklist": { label: "清单", labelEn: "Checklist" }
 };
 
 const cardClassByCategory = {
@@ -48,15 +65,24 @@ const cardClassByCategory = {
   remote: "earth-card",
   stash: "saturn-card",
   danger: "neptune-card",
+  clients: "jupiter-card",
   windows: "earth-card",
   cloud: "venus-card",
   database: "saturn-card",
   ai: "mars-card",
   links: "neptune-card",
-  templates: "uranus-card"
+  templates: "uranus-card",
+  "wk-flow": "mercury-card",
+  "wk-paths": "earth-card",
+  "wk-interfaces": "venus-card",
+  "wk-snippets": "saturn-card",
+  "wk-test": "mars-card",
+  "wk-ops": "neptune-card",
+  "wk-checklist": "uranus-card"
 };
 
 const moduleCategoryOptions = ["all", "config", "daily", "undo", "remote", "stash", "danger"];
+const clientCategoryOptions = ["all", "wk-flow", "wk-paths", "wk-interfaces", "wk-snippets", "wk-test", "wk-ops", "wk-checklist"];
 
 const uiText = {
   zh: {
@@ -86,6 +112,10 @@ const uiText = {
     copy: "复制",
     copyAll: "复制全部",
     copyLine: "复制此行",
+    deleteAction: "删除",
+    deleteConfirm: "确认",
+    deleteHint: "再次点击确认删除",
+    deletedCard: "卡片已删除",
     favoriteAction: "收藏",
     noMatchTitle: "没有匹配的卡片",
     noMatchBody: "换个关键词，或点击“新建卡片”把这条命令收进你的工作站。",
@@ -176,6 +206,10 @@ const uiText = {
     copy: "Copy",
     copyAll: "Copy All",
     copyLine: "Copy this line",
+    deleteAction: "Delete",
+    deleteConfirm: "Confirm",
+    deleteHint: "Click again to delete",
+    deletedCard: "Card deleted",
     favoriteAction: "Favorite",
     noMatchTitle: "No matching cards",
     noMatchBody: "Try another keyword, or add this command with New Card.",
@@ -520,6 +554,261 @@ const seedCards = [
     note: "模板模块以后可以放日报、复盘、PR 描述、AI 提示词等常用文本。",
     noteEn: "The template module can later hold daily logs, reviews, PR descriptions, and prompts.",
     tags: ["template", "commit", "work"]
+  },
+  {
+    id: "wk-flow-clone-build",
+    client: "wk",
+    module: "clients",
+    title: "拉取代码与编译入口",
+    titleEn: "Clone and build entry",
+    category: "wk-flow",
+    risk: "Safe",
+    scenario: "微克项目换环境、重新拉仓库或进入编译前先看这张。",
+    scenarioEn: "Use this when setting up the WK project or entering the build flow.",
+    command: "git clone --recurse-submodules <微克项目 Git 地址>\ncd WK-TG0732-1\npython git_auto_pull.py\npython wk_build_menu.py",
+    note: "原笔记里的真实内网 Git 地址已脱敏。Windows 下通常用 python，Linux 下可按环境使用 python3。",
+    noteEn: "The original internal Git URL is redacted. Use python on Windows or python3 where appropriate.",
+    tags: ["wk", "clone", "submodules", "build"]
+  },
+  {
+    id: "wk-flow-package-paths",
+    client: "wk",
+    module: "clients",
+    title: "烧录包与输出路径",
+    titleEn: "Firmware package and output paths",
+    category: "wk-flow",
+    risk: "Safe",
+    scenario: "编译后找烧录包、output 产物或服务器备份目录时使用。",
+    scenarioEn: "Use this to locate firmware packages, output artifacts, and server backup folders.",
+    command: "本地相对路径：\nWK-TG0732-1\\hisilicon_sdk\\tools\\pkg\\fwpkg\\brandy\n\n服务器路径模板：\n<共享盘>\\<日期>\\WK-TG0732-1\\hisilicon_sdk\\tools\\pkg\\fwpkg\\brandy\n<共享盘>\\<日期>\\WK-TG0732-1\\hisilicon_sdk\\output\\brandy\\acore\\brandy-ssb-native-js",
+    note: "真实共享盘盘符、日期目录和人员目录建议保留在私有笔记里，工作台只放路径结构。",
+    noteEn: "Keep real drive letters, date folders, and personal directories in private notes.",
+    tags: ["wk", "fwpkg", "output", "brandy", "烧录"]
+  },
+  {
+    id: "wk-flow-clean-build-error",
+    client: "wk",
+    module: "clients",
+    title: "编译报错后清理缓存",
+    titleEn: "Clean build cache after errors",
+    category: "wk-flow",
+    risk: "Check First",
+    scenario: "编译异常、文件系统镜像或 output 状态不干净时，先按这两个位置清理。",
+    scenarioEn: "Use when build artifacts or filesystem image state appears stale.",
+    command: "删除文件系统目录：\nWK-TG0732-1/hisilicon_sdk/build/config/target_config/brandy/mk_fs_image/fs\n\n删除编译输出目录：\nWK-TG0732-1/hisilicon_sdk/output",
+    note: "删除前确认没有需要保留的本地构建产物。",
+    noteEn: "Confirm no local build artifacts need to be kept before deleting.",
+    tags: ["wk", "clean", "output", "build error"]
+  },
+  {
+    id: "wk-flow-dump-package",
+    client: "wk",
+    module: "clients",
+    title: "Dump 目录与 ELF 对应关系",
+    titleEn: "Dump folder and ELF matching",
+    category: "wk-flow",
+    risk: "Safe",
+    scenario: "需要给 dump 分析环境准备对应版本 ELF 时使用。",
+    scenarioEn: "Use when preparing matching ELF files for dump analysis.",
+    command: "设备 dump 目录：\n/user/temp/exc/\n\n共享目录模板：\n\\\\<服务器IP>\\中转站\\hisiDump\n\n需要放入：\nWK-TG0732-1\\bin_bak\\<烧录的对应版本文件夹>\\application.elf",
+    note: "真实服务器 IP 已脱敏。关键是 dump 要配对应烧录版本的 application.elf。",
+    noteEn: "The real server IP is redacted. Match the dump with the exact flashed application.elf.",
+    tags: ["wk", "dump", "elf", "application"]
+  },
+  {
+    id: "wk-paths-common-changes",
+    client: "wk",
+    module: "clients",
+    title: "常用修改位置",
+    titleEn: "Common edit locations",
+    category: "wk-paths",
+    risk: "Check First",
+    scenario: "改蓝牙 MAC、蓝牙名称、屏幕常亮时快速定位文件。",
+    scenarioEn: "Use to quickly find common Bluetooth and display edit points.",
+    command: "蓝牙 MAC：\nWK-TG0732-1/wk_framework/component/bluetooth/bt_addr.h\n#define BT_MAC_ADDR 0x12, 0x34, 0x56, 0x66, 0x66, 0x99\n\n音频蓝牙名称：\nWK-TG0732-1/wk_framework/component/bluetooth/bt_comm.c\n#define BR_NAME CONFIG_BLE_DEVICE_NAME\" <名称>\"\n\n屏幕常亮：\nWK-TG0732-1/hisilicon_sdk/application/wearable/service/power_manager/src/power_display_service.c\n#define DISPLAY_AUTO_POWER_OFF_PERIOD_MS UINT32_MAX",
+    note: "示例里的蓝牙名已替换成占位符，避免把临时测试名写进正式资料。",
+    noteEn: "The Bluetooth name is represented as a placeholder.",
+    tags: ["wk", "bluetooth", "screen", "path"]
+  },
+  {
+    id: "wk-paths-ui-launcher",
+    client: "wk",
+    module: "clients",
+    title: "UI 控件与主菜单位置",
+    titleEn: "UI components and launcher paths",
+    category: "wk-paths",
+    risk: "Safe",
+    scenario: "找公共控件、加载控件、主菜单应用注册或排序时使用。",
+    scenarioEn: "Use when finding common UI components or launcher registration order.",
+    command: "公共控件：\nWK-TG0732-1/hisilicon_sdk/wk_application/wk_display_comm/element/\n\n加载控件示例：\nwk_Loading.cpp\n\n主菜单应用注册/排序：\nWK-TG0732-1/hisilicon_sdk/application/wearable/nativeapp/nativelauncher/include/AppViewIDs.h",
+    note: "这一类路径很适合工作台，因为搜索路径比临时翻笔记更快。",
+    noteEn: "Paths like these fit the workstation well because search is faster than browsing notes.",
+    tags: ["wk", "ui", "launcher", "AppViewIDs"]
+  },
+  {
+    id: "wk-paths-flash-optimization",
+    client: "wk",
+    module: "clients",
+    title: "优化烧录相关配置",
+    titleEn: "Flash optimization config files",
+    category: "wk-paths",
+    risk: "Check First",
+    scenario: "需要调整烧录、文件系统或 nandflash 配置时快速定位。",
+    scenarioEn: "Use when adjusting flash, filesystem, or NAND configuration.",
+    command: "config.py\ncommon_config.py\nnandflash_config.c\n\n路径模板：\nWK-TG0732-1/hisilicon_sdk/build/config/target_config/brandy/config.py\nWK-TG0732-1/hisilicon_sdk/build/config/target_config/common_config.py\nWK-TG0732-1/hisilicon_sdk/bootloader/flashboot/brandy/nandflash/nandflash_config.c",
+    note: "改这类配置前建议先记录当前版本和差异。",
+    noteEn: "Record the current version and diff before editing these files.",
+    tags: ["wk", "flash", "config", "nandflash"]
+  },
+  {
+    id: "wk-interfaces-screen-size",
+    client: "wk",
+    module: "clients",
+    title: "获取全屏尺寸",
+    titleEn: "Get full screen size",
+    category: "wk-interfaces",
+    risk: "Safe",
+    scenario: "写 UI 布局或适配屏幕宽高时使用。",
+    scenarioEn: "Use when writing UI layout or adapting to screen dimensions.",
+    command: '#include "common/screen.h"\n\nuint16_t hor_pixel = OHOS::Screen::GetInstance().GetWidth();\nuint16_t ver_pixel = OHOS::Screen::GetInstance().GetHeight();',
+    note: "适合放成可复制代码片段。",
+    noteEn: "Good as a copyable snippet.",
+    tags: ["wk", "screen", "ui", "OHOS"]
+  },
+  {
+    id: "wk-interfaces-hardware",
+    client: "wk",
+    module: "clients",
+    title: "震动、亮屏、蓝牙连接接口",
+    titleEn: "Motor, screen, and Bluetooth APIs",
+    category: "wk-interfaces",
+    risk: "Safe",
+    scenario: "需要调用震动、亮屏/灭屏、判断蓝牙连接状态时快速定位。",
+    scenarioEn: "Use to find motor, screen, and Bluetooth connection APIs.",
+    command: "震动：\nuapi_motor_control_equal_cycle\nWK-TG0732-1/hisilicon_sdk/drivers/drivers/driver/motor/motor_api.c\n\n亮屏/灭屏：\nScreenKeepOnTimeout\nScreenTurnOnOrExitAod\nScreenTurnOffOrEnterAod\nWK-TG0732-1/hisilicon_sdk/application/wearable/ntiveapp/nativeui/uiservice/src/ui_service.cpp\n\n蓝牙是否连接：\napp_is_connect(void)\nWK-TG0732-1/hisilicon_sdk/wk_framework/service/service_comm/service_comm.cpp",
+    note: "原笔记里 ui_service 路径写作 ntiveapp，先按原路径保留；如果项目里实际是 nativeapp，后续可校正。",
+    noteEn: "The ui_service path follows the original note and can be corrected later if needed.",
+    tags: ["wk", "motor", "screen", "bluetooth", "api"]
+  },
+  {
+    id: "wk-interfaces-slice-previous",
+    client: "wk",
+    module: "clients",
+    title: "Slice 获取上一个页面 ID",
+    titleEn: "Get previous Slice ID",
+    category: "wk-interfaces",
+    risk: "Safe",
+    scenario: "需要判断上一页是否有效时使用。",
+    scenarioEn: "Use when checking whether the previous Slice is valid.",
+    command: "uint16_t preSliceId = NativeAbility::GetInstance().GetPreSliceId();\n\nif (preSliceId != gSliceInvalid && preSliceId != 0) {\n    // 有效\n} else {\n    // 无效\n}",
+    note: "这是典型项目经验片段，适合工作台长期保存。",
+    noteEn: "This is project-specific knowledge worth keeping in the workstation.",
+    tags: ["wk", "Slice", "NativeAbility", "ui"]
+  },
+  {
+    id: "wk-snippets-headers",
+    client: "wk",
+    module: "clients",
+    title: "常用头文件",
+    titleEn: "Common headers",
+    category: "wk-snippets",
+    risk: "Safe",
+    scenario: "新建或补功能文件时快速复制常见 include。",
+    scenarioEn: "Use when creating or extending feature files.",
+    command: '#include "ble_wearfit_manager.h"\n#include "ble_wearfit_features.h"\n#include "ble_wearfit_protocol.h"\n#include "wearable_log.h"\n#include "errcode.h"\n#include "nv.h"\n#include "wk_nv_id.h"\n#include "app_nv_id.h"\n#include "wk_uidatasubs.h"',
+    note: "后续可以再按功能拆成蓝牙/NV/UI 三类头文件。",
+    noteEn: "Can later be split into Bluetooth, NV, and UI header groups.",
+    tags: ["wk", "headers", "include"]
+  },
+  {
+    id: "wk-snippets-nv-storage",
+    client: "wk",
+    module: "clients",
+    title: "NV 存储读写模板",
+    titleEn: "NV storage template",
+    category: "wk-snippets",
+    risk: "Safe",
+    scenario: "新增配置项，需要 set/get/init 三件套时直接套用。",
+    scenarioEn: "Use when adding a config item with set/get/init helpers.",
+    command: "errcode_t sn_cfg_set(sn_cfg_t *data)\n{\n    errcode_t ret = uapi_nv_write(SETTING_NV_ID_NOT_DISTURB_CFG, (uint8_t*)data, sizeof(sn_cfg_t));\n    return ret;\n}\n\nerrcode_t sn_cfg_get(sn_cfg_t *data)\n{\n    uint16_t nvsize = 0;\n    errcode_t ret = uapi_nv_read(SETTING_NV_ID_NOT_DISTURB_CFG, sizeof(sn_cfg_t), &nvsize, (uint8_t*)data);\n    return ret;\n}\n\nerrcode_t sn_cfg_init(void)\n{\n    sn_cfg_t data = {0};\n    uint16_t nvsize = 0;\n    errcode_t ret = uapi_nv_read(SETTING_NV_ID_NOT_DISTURB_CFG, sizeof(sn_cfg_t), &nvsize, (uint8_t*)&data);\n    if (ret != ERRCODE_SUCC && nvsize != sizeof(sn_cfg_t)) {\n        ret = uapi_nv_write(SETTING_NV_ID_NOT_DISTURB_CFG, (uint8_t*)&data, sizeof(sn_cfg_t));\n    }\n    return ret;\n}",
+    note: "实际使用时替换结构体、NV ID 和默认值。",
+    noteEn: "Replace the struct, NV ID, and defaults before use.",
+    tags: ["wk", "nv", "storage", "template"]
+  },
+  {
+    id: "wk-snippets-compile-guards",
+    client: "wk",
+    module: "clients",
+    title: "编译保护模板",
+    titleEn: "Compile guard templates",
+    category: "wk-snippets",
+    risk: "Safe",
+    scenario: "C/C++ 混编、模拟器环境隔离或底层硬件调用保护时使用。",
+    scenarioEn: "Use for C/C++ linkage and simulator/hardware guards.",
+    command: "extern \"C\" {\n\n} // extern \"C\"\n\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n#ifdef __cplusplus\n}\n#endif\n\n#if !defined(_WIN32)\n// 调用底层硬件，防止模拟器/Windows 环境编译\n#endif",
+    note: "这类片段适合放工作台，因为每次临时写容易漏括号或宏。",
+    noteEn: "Good workstation material because it is easy to mistype these guards.",
+    tags: ["wk", "extern C", "_WIN32", "compile"]
+  },
+  {
+    id: "wk-test-monkey-at",
+    client: "wk",
+    module: "clients",
+    title: "Monkey / AT 测试命令",
+    titleEn: "Monkey and AT commands",
+    category: "wk-test",
+    risk: "Safe",
+    scenario: "测试所有应用、停止测试、模拟消息通知或指定应用测试时使用。",
+    scenarioEn: "Use to test all apps, stop tests, simulate notifications, or target a specific app.",
+    command: "AT^UIKIT_DFX=testapp start\nAT^UIKIT_DFX=testapp all\nAT^UIKIT_DFX=testapp STOP\nAT^UIKIT_DFX=testapp VIEW_CONTACTS_WK\nAT^UIKIT_DFX=sms 7 hello:kkk\nAT^UIKIT_DFX=testapp VIEW_BAIDU_MAPS_WK\nAT^UIKIT_DFX=testapp VIEW_WECHAT_MSG_WK",
+    note: "短信命令里 7 表示 QQ 类型，冒号用于分隔发件人和内容。",
+    noteEn: "In the SMS command, 7 represents QQ type and colon separates sender from content.",
+    tags: ["wk", "monkey", "AT", "testapp", "sms"]
+  },
+  {
+    id: "wk-ops-vscode-ssh",
+    client: "wk",
+    module: "clients",
+    title: "VS Code Remote-SSH 模板",
+    titleEn: "VS Code Remote-SSH template",
+    category: "wk-ops",
+    risk: "Safe",
+    scenario: "重新添加 SSH 目标或换网口后连接混乱时使用。",
+    scenarioEn: "Use when re-adding SSH targets or when network changes cause wrong server selection.",
+    command: "Ctrl + Shift + P\nRemote-SSH: Add New SSH Host\nssh <用户名>@<服务器IP>\n\n或编辑 SSH 配置：\nHost company-server\n    HostName <服务器IP>\n    User <用户名>\n    Port 22\n    ServerAliveInterval 60\n    ServerAliveCountMax 3",
+    note: "真实服务器 IP、用户名、RemoteForward 端口已脱敏。不要把客户账号密码写进公开仓库。",
+    noteEn: "Real IP, username, and forwarding details are redacted. Do not commit customer credentials.",
+    tags: ["wk", "ssh", "vscode", "remote"]
+  },
+  {
+    id: "wk-ops-share-transfer",
+    client: "wk",
+    module: "clients",
+    title: "共享目录访问模板",
+    titleEn: "Shared folder access template",
+    category: "wk-ops",
+    risk: "Safe",
+    scenario: "需要通过 Windows 访问中转站、dump 目录或临时共享文件时使用。",
+    scenarioEn: "Use when accessing transfer folders, dump directories, or temporary shares from Windows.",
+    command: "Win + R\n\\\\<服务器IP>\n\n常见目录模板：\n\\\\<服务器IP>\\中转站\\hisiDump",
+    note: "这里只保留操作方式和目录结构，真实 IP 不进站点源码。",
+    noteEn: "Only the workflow and folder pattern are kept; the real IP is not stored in source.",
+    tags: ["wk", "share", "windows", "dump"]
+  },
+  {
+    id: "wk-checklist-exit-cleanup",
+    client: "wk",
+    module: "clients",
+    title: "临时设备退出清单",
+    titleEn: "Temporary device exit checklist",
+    category: "wk-checklist",
+    risk: "Check First",
+    scenario: "离开客户设备、临时电脑或共享电脑前检查。",
+    scenarioEn: "Use before leaving a customer, temporary, or shared device.",
+    command: "1. 退出微软账号、OneDrive、微信、钉钉\n2. 删除微信聊天记录、钉钉缓存、OneDrive 挂载目录等\n3. 卸载临时安装的软件\n4. 转移并删除资料\n5. 清空回收站\n6. 检查浏览器登录状态和下载目录",
+    note: "这是适合放工作台的清单，但不应该附带任何账号密码。",
+    noteEn: "This checklist fits the workstation, but must not include account credentials.",
+    tags: ["wk", "checklist", "cleanup", "exit"]
   }
 ];
 
@@ -581,7 +870,9 @@ const elements = {
   languageToggle: document.getElementById("languageToggle"),
   themeMeta: document.querySelector('meta[name="theme-color"]'),
   brandSub: document.querySelector(".brand p"),
+  nav: document.querySelector(".nav"),
   navItems: Array.from(document.querySelectorAll(".nav-item")),
+  clientSelect: null,
   quickSearch: document.getElementById("quickSearch"),
   clearSearch: document.getElementById("clearSearch"),
   quickFilters: document.getElementById("quickFilters"),
@@ -617,6 +908,7 @@ const elements = {
 
 const state = {
   module: "git",
+  client: "wk",
   category: "all",
   search: "",
   favoritesOnly: false,
@@ -630,6 +922,7 @@ const state = {
 
 let favorites = new Set(readJson(storageKeys.favorites, []));
 let customCards = readJson(storageKeys.customCards, []).filter(isValidCustomCard);
+let deletedCards = new Set(readJson(storageKeys.deletedCards, []));
 let recentCards = readJson(storageKeys.recentCards, []);
 let cardFrequency = readJson(storageKeys.cardFrequency, {});
 
@@ -641,20 +934,20 @@ render();
 initSync();
 
 function bindEvents() {
-  elements.navItems.forEach((button) => {
-    button.addEventListener("click", () => {
-      const nextModule = moduleMeta[button.dataset.module] ? button.dataset.module : "git";
-      if (state.module !== nextModule) {
-        state.search = "";
-        if (elements.quickSearch) elements.quickSearch.value = "";
-      }
-      state.module = nextModule;
-      state.category = "all";
-      state.favoritesOnly = false;
-      syncCategoryUi();
-      render();
-      scrollMainTop();
-    });
+  elements.nav?.addEventListener("click", (event) => {
+    const button = event.target.closest(".nav-item");
+    if (!button) return;
+    const nextModule = moduleMeta[button.dataset.module] ? button.dataset.module : "git";
+    if (state.module !== nextModule) {
+      state.search = "";
+      if (elements.quickSearch) elements.quickSearch.value = "";
+    }
+    state.module = nextModule;
+    state.category = "all";
+    state.favoritesOnly = false;
+    syncCategoryUi();
+    render();
+    scrollMainTop();
   });
 
   elements.quickSearch?.addEventListener("input", debounce((event) => {
@@ -671,7 +964,7 @@ function bindEvents() {
   elements.quickFilters?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-filter]");
     if (!button) return;
-    if (state.module !== "git") return;
+    if (state.module !== "git" && state.module !== "clients") return;
     const nextCategory = button.dataset.filter || "all";
     state.category = state.category === nextCategory ? "all" : nextCategory;
     state.favoritesOnly = false;
@@ -751,6 +1044,7 @@ function bindEvents() {
     const copyLineButton = event.target.closest("[data-action='copy-line']");
     const copyButton = event.target.closest("[data-action='copy']");
     const favoriteButton = event.target.closest("[data-action='favorite']");
+    const deleteButton = event.target.closest("[data-action='delete']");
     const card = event.target.closest(".command-card");
 
     if (copyLineButton) {
@@ -772,6 +1066,12 @@ function bindEvents() {
     if (favoriteButton) {
       event.stopPropagation();
       toggleFavorite(favoriteButton.dataset.id || "");
+      return;
+    }
+
+    if (deleteButton) {
+      event.stopPropagation();
+      handleDeleteCard(deleteButton);
       return;
     }
 
@@ -842,7 +1142,7 @@ function bindEvents() {
 function render() {
   const cards = getAllCards();
   const visibleCards = filterCards(cards);
-  const moduleCards = cards.filter((card) => getCardModule(card) === state.module);
+  const moduleCards = cards.filter((card) => isCardInCurrentModuleForCount(card, state.module));
   if (state.selectedId && !visibleCards.some((card) => card.id === state.selectedId)) {
     state.selectedId = visibleCards[0]?.id || null;
   }
@@ -860,13 +1160,15 @@ function render() {
 
 function renderHeader(visibleCount, totalCount) {
   const module = moduleMeta[state.module] || moduleMeta.git;
-  const category = categoryMeta[state.category] || categoryMeta.all;
+  const category = state.module === "clients" ? clientCategoryMeta[state.category] || clientCategoryMeta.all : categoryMeta[state.category] || categoryMeta.all;
   const t = getText();
   const modeLabel = state.favoritesOnly ? t.favorites : null;
   elements.pageEyebrow.textContent = modeLabel ? `${localizeMeta(module, "label")} / ${modeLabel}` : module.eyebrow;
   elements.pageTitle.textContent = modeLabel ? t.favoriteCards : localizeMeta(module, "title");
   elements.resultEyebrow.textContent = modeLabel ? t.favoriteCards : t.resultEyebrow;
   elements.resultTitle.textContent = getResultTitle(module, category, modeLabel, t);
+  renderClientControls();
+  renderQuickFilters();
   elements.resultCount.textContent = `${visibleCount} ${t.cardsUnit}`;
   if (elements.totalCount) elements.totalCount.textContent = String(totalCount);
   if (elements.favoriteCount) elements.favoriteCount.textContent = String(getModuleFavoriteCount(state.module));
@@ -895,7 +1197,7 @@ function renderCards(cards) {
     const isFavorite = favorites.has(card.id);
     const module = moduleMeta[getCardModule(card)] || moduleMeta.git;
     const categoryLabel = getCardCategoryLabel(card);
-    const moduleLabel = localizeMeta(module, "label") || t.git;
+    const moduleLabel = getCardModuleLabel(card, module, t);
     const commandLines = card.command.split("\n");
     const isMultiLine = commandLines.length > 1;
     const commandHtml = commandLines.map((line) =>
@@ -921,6 +1223,7 @@ function renderCards(cards) {
           <div class="actions">
             <button class="copy-button favorite-button ${isFavorite ? "is-favorite" : ""}" type="button" data-action="favorite" data-id="${escapeAttr(card.id)}" aria-label="${escapeAttr(t.favoriteAction)} ${escapeAttr(title)}">${isFavorite ? "★" : "☆"}</button>
             <button class="copy-button" type="button" data-action="copy" data-command="${escapeAttr(card.command)}" data-id="${escapeAttr(card.id)}">${isMultiLine ? t.copyAll : t.copy}</button>
+            <button class="copy-button delete-button" type="button" data-action="delete" data-id="${escapeAttr(card.id)}" aria-label="${escapeAttr(t.deleteAction)} ${escapeAttr(title)}">${escapeHtml(t.deleteAction)}</button>
           </div>
         </footer>
       </article>
@@ -964,11 +1267,19 @@ function renderDetail(card) {
 }
 
 function getAllCards() {
-  return [...seedCards, ...customCards];
+  return [...seedCards, ...customCards].filter((card) => !deletedCards.has(card.id));
+}
+
+function getCardClient(card) {
+  return clientMeta[card?.client] ? card.client : null;
 }
 
 function getText() {
   return uiText[state.language] || uiText.zh;
+}
+
+function localizeClientCategory(category, fallback = "") {
+  return localizeMeta(clientCategoryMeta[category], "label") || fallback || category;
 }
 
 function localizeMeta(meta, key) {
@@ -992,14 +1303,28 @@ function getCardClass(card) {
 }
 
 function getCardCategoryLabel(card) {
+  if (getCardModule(card) === "clients") return localizeClientCategory(card.category);
   const category = categoryMeta[card.category];
   if (category) return localizeMeta(category, "label");
   const module = moduleMeta[getCardModule(card)];
   return localizeMeta(module, "label") || card.category || "";
 }
 
+function getCardModuleLabel(card, module, t) {
+  if (getCardModule(card) === "clients") {
+    const client = clientMeta[getCardClient(card)] || clientMeta.wk;
+    return localizeMeta(client, "label");
+  }
+  return localizeMeta(module, "label") || t.git;
+}
+
 function getModuleFavoriteCount(moduleKey) {
-  return getAllCards().filter((card) => getCardModule(card) === moduleKey && favorites.has(card.id)).length;
+  return getAllCards().filter((card) => isCardInCurrentModuleForCount(card, moduleKey) && favorites.has(card.id)).length;
+}
+
+function isCardInCurrentModuleForCount(card, moduleKey) {
+  if (moduleKey === "clients") return getCardModule(card) === "clients" && getCardClient(card) === state.client;
+  return getCardModule(card) === moduleKey;
 }
 
 function getResultTitle(module, category, modeLabel, t) {
@@ -1009,9 +1334,16 @@ function getResultTitle(module, category, modeLabel, t) {
       ? t.frequentGit
       : `${localizeMeta(category, "label")}${state.language === "zh" ? "卡片" : " Cards"}`;
   }
+  if (state.module === "clients") {
+    const client = clientMeta[state.client] || clientMeta.wk;
+    if (state.category === "all") return state.language === "zh" ? `${localizeMeta(client, "label")}资料` : `${localizeMeta(client, "label")} Notes`;
+    return state.language === "zh"
+      ? `${localizeClientCategory(state.category)}卡片`
+      : `${localizeClientCategory(state.category)} Cards`;
+  }
   return state.language === "zh"
-    ? `${localizeMeta(module, "label")} 样例`
-    : `${localizeMeta(module, "label")} Samples`;
+    ? `${localizeMeta(module, "label")}卡片`
+    : `${localizeMeta(module, "label")} Cards`;
 }
 
 function renderCardCategoryOptions() {
@@ -1027,16 +1359,68 @@ function renderCardCategoryOptions() {
   }).join("");
 }
 
+function renderQuickFilters() {
+  if (!elements.quickFilters) return;
+  const options = state.module === "clients" ? clientCategoryOptions : moduleCategoryOptions;
+  elements.quickFilters.innerHTML = options.map((key) => {
+    const label = state.module === "clients"
+      ? localizeClientCategory(key)
+      : localizeMeta(categoryMeta[key] || categoryMeta.all, "label");
+    return `<button type="button" data-filter="${escapeAttr(key)}">${escapeHtml(label)}</button>`;
+  }).join("");
+}
+
+function renderClientControls() {
+  const host = document.querySelector(".focus-panel");
+  if (!host) return;
+  let controls = document.getElementById("clientControls");
+  host.classList.toggle("has-client-controls", state.module === "clients");
+  if (state.module !== "clients") {
+    controls?.remove();
+    elements.clientSelect = null;
+    return;
+  }
+
+  if (!controls) {
+    controls = document.createElement("div");
+    controls.className = "client-controls";
+    controls.id = "clientControls";
+  }
+  if (controls.parentElement !== host) {
+    host.appendChild(controls);
+  }
+
+  const options = Object.entries(clientMeta).map(([key, client]) =>
+    `<option value="${escapeAttr(key)}" ${state.client === key ? "selected" : ""}>${escapeHtml(localizeMeta(client, "label"))}</option>`
+  ).join("");
+  controls.innerHTML = `
+    <label for="clientSelect">${state.language === "zh" ? "客户" : "Client"}</label>
+    <select id="clientSelect">${options}</select>
+  `;
+  elements.clientSelect = controls.querySelector("#clientSelect");
+  elements.clientSelect?.addEventListener("change", (event) => {
+    state.client = clientMeta[event.target.value] ? event.target.value : "wk";
+    state.category = "all";
+    state.selectedId = null;
+    render();
+  });
+}
+
 function filterCards(cards) {
   const query = state.search.toLowerCase();
   const filtered = cards.filter((card) => {
-    const matchesModule = getCardModule(card) === state.module;
-    const matchesCategory = state.module !== "git" || state.category === "all" || card.category === state.category;
+    const matchesModule = state.module === "clients"
+      ? getCardModule(card) === "clients" && getCardClient(card) === state.client
+      : getCardModule(card) === state.module;
+    const matchesCategory = state.module === "clients"
+      ? state.category === "all" || card.category === state.category
+      : state.module !== "git" || state.category === "all" || card.category === state.category;
     const matchesFavorite = !state.favoritesOnly || favorites.has(card.id);
     const haystack = [
       card.title,
       card.titleEn,
       card.category,
+      getCardClient(card),
       getCardModule(card),
       card.scenario,
       card.scenarioEn,
@@ -1076,7 +1460,7 @@ function syncCategoryUi() {
     button.classList.toggle("active", (button.dataset.module || "git") === state.module);
   });
   if (elements.quickFilters) {
-    const showFilters = state.module === "git";
+    const showFilters = state.module === "git" || state.module === "clients";
     elements.quickFilters.hidden = !showFilters;
     elements.quickFilters.setAttribute("aria-hidden", String(!showFilters));
   }
@@ -1097,7 +1481,6 @@ function applyLanguage(language) {
     elements.languageToggle.querySelector(".language-text").textContent = t.langButton;
     elements.languageToggle.querySelector(".language-icon").textContent = state.language === "zh" ? "文" : "A";
   }
-
   document.querySelector(".focus-copy .eyebrow").textContent = t.focusEyebrow;
   const currentModule = moduleMeta[state.module] || moduleMeta.git;
   document.querySelector(".focus-copy h3").textContent = localizeMeta(currentModule, "focusTitle") || t.focusTitle;
@@ -1112,10 +1495,7 @@ function applyLanguage(language) {
     button.querySelector("small").textContent = localizeMeta(meta, "sub");
   });
 
-  elements.quickFilters?.querySelectorAll("[data-filter]").forEach((button) => {
-    const meta = categoryMeta[button.dataset.filter] || categoryMeta.all;
-    button.textContent = localizeMeta(meta, "label");
-  });
+  renderQuickFilters();
 
   document.querySelector("#detailPanel .panel-head .eyebrow").textContent = t.selectedEyebrow;
   document.querySelector(".solar-panel .eyebrow").textContent = t.solarEyebrow;
@@ -1302,6 +1682,7 @@ function getLocalPayload() {
     language: state.language,
     favorites: Array.from(favorites),
     customCards,
+    deletedCards: Array.from(deletedCards),
     recentCards,
     cardFrequency,
     clientUpdatedAt: localStorage.getItem(storageKeys.localUpdatedAt) || new Date().toISOString(),
@@ -1312,13 +1693,18 @@ function getLocalPayload() {
 function mergeCloudPayload(cloudPayload, localPayload, options = {}) {
   const preferLocal = options.preferLocal || isLocalNewer(localPayload, cloudPayload);
   const preferenceSource = preferLocal ? localPayload : cloudPayload;
+  const deletedCards = normalizeStringArray([
+    ...normalizeStringArray(cloudPayload.deletedCards),
+    ...normalizeStringArray(localPayload.deletedCards)
+  ]);
 
   return {
     version: 1,
     theme: preferenceSource.theme || localPayload.theme,
     language: preferenceSource.language || localPayload.language,
     favorites: normalizeStringArray(preferenceSource.favorites || localPayload.favorites),
-    customCards: mergeCards(cloudPayload.customCards || [], localPayload.customCards || []),
+    customCards: mergeCards(cloudPayload.customCards || [], localPayload.customCards || [], deletedCards),
+    deletedCards,
     recentCards: normalizeStringArray(preferenceSource.recentCards || localPayload.recentCards).slice(0, 20),
     cardFrequency: mergeFrequency(cloudPayload.cardFrequency || {}, localPayload.cardFrequency || {}),
     clientUpdatedAt: preferLocal ? localPayload.clientUpdatedAt : cloudPayload.clientUpdatedAt || localPayload.clientUpdatedAt,
@@ -1331,12 +1717,15 @@ function applyCloudPayload(payload) {
 
   favorites = new Set(Array.isArray(payload.favorites) ? payload.favorites : []);
   customCards = (Array.isArray(payload.customCards) ? payload.customCards : []).filter(isValidCustomCard);
+  deletedCards = new Set(normalizeStringArray(payload.deletedCards));
   recentCards = Array.isArray(payload.recentCards) ? payload.recentCards.slice(0, 20) : [];
   cardFrequency = payload.cardFrequency && typeof payload.cardFrequency === "object" ? payload.cardFrequency : {};
   state.language = payload.language === "en" ? "en" : "zh";
+  state.category = "all";
 
   writeJson(storageKeys.favorites, Array.from(favorites));
   writeJson(storageKeys.customCards, customCards);
+  writeJson(storageKeys.deletedCards, Array.from(deletedCards));
   writeJson(storageKeys.recentCards, recentCards);
   writeJson(storageKeys.cardFrequency, cardFrequency);
   localStorage.setItem(storageKeys.language, state.language);
@@ -1351,10 +1740,11 @@ function applyCloudPayload(payload) {
   state.suppressSync = false;
 }
 
-function mergeCards(primaryCards, secondaryCards) {
+function mergeCards(primaryCards, secondaryCards, deletedIds = []) {
+  const deleted = new Set(deletedIds);
   const byId = new Map();
   [...secondaryCards, ...primaryCards].forEach((card) => {
-    if (isValidCustomCard(card)) byId.set(card.id, card);
+    if (isValidCustomCard(card) && !deleted.has(card.id)) byId.set(card.id, card);
   });
   return Array.from(byId.values()).sort((a, b) => String(b.id).localeCompare(String(a.id)));
 }
@@ -1430,7 +1820,7 @@ function saveCustomCard(formData) {
     return;
   }
 
-  const activeModule = moduleMeta[state.module] ? state.module : "git";
+  const activeModule = moduleMeta[state.module] && state.module !== "clients" ? state.module : "git";
   const rawCategory = clean(formData.get("category"));
   const category = activeModule === "git"
     ? (categoryMeta[rawCategory] && rawCategory !== "all" ? rawCategory : "daily")
@@ -1479,6 +1869,56 @@ function toggleFavorite(id) {
     showToast(t.favoriteAdded);
   }
   writeJson(storageKeys.favorites, Array.from(favorites));
+  render();
+  touchLocalState();
+  scheduleCloudSync({ preferLocal: true });
+}
+
+function handleDeleteCard(button) {
+  const id = button.dataset.id || "";
+  if (!id) return;
+  const t = getText();
+  if (button.dataset.confirm !== "true") {
+    button.dataset.confirm = "true";
+    button.classList.add("is-confirming");
+    button.textContent = t.deleteConfirm;
+    button.setAttribute("title", t.deleteHint);
+    clearTimeout(handleDeleteCard.timer);
+    handleDeleteCard.timer = setTimeout(() => {
+      button.dataset.confirm = "false";
+      button.classList.remove("is-confirming");
+      button.textContent = t.deleteAction;
+      button.removeAttribute("title");
+    }, 2400);
+    showToast(t.deleteHint);
+    return;
+  }
+
+  deleteCard(id);
+}
+
+function deleteCard(id) {
+  const t = getText();
+  const card = getAllCards().find((item) => item.id === id);
+  if (!card) return;
+
+  deletedCards.add(id);
+  writeJson(storageKeys.deletedCards, Array.from(deletedCards));
+
+  if (card.custom) {
+    customCards = customCards.filter((item) => item.id !== id);
+    writeJson(storageKeys.customCards, customCards);
+  }
+
+  favorites.delete(id);
+  recentCards = recentCards.filter((cid) => cid !== id);
+  delete cardFrequency[id];
+  if (state.selectedId === id) state.selectedId = null;
+
+  writeJson(storageKeys.favorites, Array.from(favorites));
+  writeJson(storageKeys.recentCards, recentCards);
+  writeJson(storageKeys.cardFrequency, cardFrequency);
+  showToast(t.deletedCard);
   render();
   touchLocalState();
   scheduleCloudSync({ preferLocal: true });
@@ -1646,6 +2086,9 @@ function debounce(fn, delay) {
 function scrollMainTop() {
   if (elements.main) {
     elements.main.scrollTo({ top: 0, behavior: "smooth" });
+    if (window.matchMedia("(max-width: 1160px)").matches) {
+      elements.main.scrollIntoView({ block: "start", behavior: "smooth" });
+    }
     return;
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
