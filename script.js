@@ -30,7 +30,8 @@ const categoryMeta = {
   undo: { label: "撤销", labelEn: "Undo", sub: "撤销恢复", subEn: "Undo & restore", eyebrow: "Mars Orbit / Recovery", title: "撤销与恢复", titleEn: "Undo & Recovery" },
   remote: { label: "远程", labelEn: "Remote", sub: "远程同步", subEn: "Remote sync", eyebrow: "Earth Orbit / Sync", title: "远程与同步", titleEn: "Remote & Sync" },
   stash: { label: "暂存", labelEn: "Stash", sub: "暂存现场", subEn: "Save context", eyebrow: "Saturn Orbit / Context", title: "暂存现场", titleEn: "Stash Context" },
-  danger: { label: "危险", labelEn: "Danger", sub: "危险操作", subEn: "Careful ops", eyebrow: "Neptune Orbit / Confirm First", title: "危险操作", titleEn: "Careful Operations" }
+  danger: { label: "危险", labelEn: "Danger", sub: "危险操作", subEn: "Careful ops", eyebrow: "Neptune Orbit / Confirm First", title: "危险操作", titleEn: "Careful Operations" },
+  "api-relay": { label: "API 中转站", labelEn: "API Relay", sub: "模型代理配置", subEn: "Model proxy config", eyebrow: "Mars Orbit / API Relay", title: "API 中转站", titleEn: "API Relay" }
 };
 
 const moduleMeta = {
@@ -537,6 +538,20 @@ const seedCards = [
     note: "适合你现在这种持续打磨风格基调的流程。",
     noteEn: "Useful for iterative visual and UX refinement.",
     tags: ["ai", "prompt", "review", "ux"]
+  },
+  {
+    id: "ai-api-relay-codex-xiavier",
+    module: "ai",
+    title: "Codex API 中转站配置",
+    titleEn: "Codex API relay config",
+    category: "api-relay",
+    risk: "Check First",
+    scenario: "在新设备或重装 Codex 后，需要快速恢复 Xiavier API 中转站配置时使用。",
+    scenarioEn: "Use this to restore the Xiavier API relay setup for Codex on a new or rebuilt machine.",
+    command: "base: https://xiavier.com\n\nvim ~/.codex/auth.json\n{\n  \"OPENAI_API_KEY\": \"sk-<替换为你的 Xiavier API Key>\"\n}\n\nvim ~/.codex/config.toml\nmodel_provider = \"Xiavier\"\nmodel = \"gpt-5.5\"\nmodel_reasoning_effort = \"xhigh\"\npreferred_auth_method = \"apikey\"\npersonality = \"pragmatic\"\nnetwork_access = \"enabled\"\n\n[mcp_servers.sqlite-site-db]\nargs = [\"-y\", \"mcp-sqlite\"]\ncommand = \"npx\"\nenabled = true\n\n[model_providers.Xiavier]\nname = \"Xiavier\"\nbase_url = \"https://api.xiavier.com/v1\"\nwire_api = \"responses\"\nrequires_openai_auth = true",
+    note: "真实 API Key 不要写进网站源码或 Git 仓库；如果密钥已经暴露，建议在中转站后台重新生成。",
+    noteEn: "Never commit a real API key to this site or Git. Rotate the key if it has been exposed.",
+    tags: ["ai", "codex", "api-relay", "xiavier", "config"]
   },
   {
     id: "links-workstation-stack",
@@ -1382,13 +1397,15 @@ function renderCardCategoryOptions() {
     ? moduleCategoryOptions.filter((key) => key !== "all")
     : activeModule === "clients"
       ? clientCategoryOptions.filter((key) => key !== "all")
-      : [activeModule];
+      : editingCard?.category && editingCard.category !== activeModule
+        ? [editingCard.category]
+        : [activeModule];
   select.innerHTML = options.map((key) => {
     const label = activeModule === "git"
       ? localizeMeta(categoryMeta[key], "label")
       : activeModule === "clients"
         ? localizeClientCategory(key)
-        : localizeMeta(moduleMeta[key], "label");
+        : localizeMeta(categoryMeta[key], "label") || localizeMeta(moduleMeta[key], "label");
     return `<option value="${escapeAttr(key)}">${escapeHtml(label)}</option>`;
   }).join("");
 }
@@ -1929,7 +1946,7 @@ function getCardInput(formData, baseCard = null) {
     ? (categoryMeta[rawCategory] && rawCategory !== "all" ? rawCategory : "daily")
     : activeModule === "clients"
       ? (clientCategoryMeta[rawCategory] && rawCategory !== "all" ? rawCategory : baseCard?.category || "wk-flow")
-      : activeModule;
+      : baseCard?.category || activeModule;
   const tags = clean(formData.get("tags"))
     .split(/[,\uFF0C]/)
     .map((tag) => tag.trim())
