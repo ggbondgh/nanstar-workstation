@@ -7,6 +7,7 @@ const storageKeys = {
   deletedCards: "nanstar-workstation-deleted-cards",
   recentCards: "nanstar-workstation-recent",
   cardFrequency: "nanstar-workstation-frequency",
+  moduleOrder: "nanstar-workstation-module-order",
   syncEmail: "nanstar-workstation-sync-email",
   localUpdatedAt: "nanstar-workstation-local-updated-at"
 };
@@ -85,6 +86,7 @@ const cardClassByCategory = {
 
 const moduleCategoryOptions = ["all", "config", "daily", "undo", "remote", "stash", "danger"];
 const clientCategoryOptions = ["all", "wk-flow", "wk-paths", "wk-interfaces", "wk-snippets", "wk-test", "wk-ops", "wk-checklist"];
+const defaultModuleOrder = ["git", "clients", "windows", "cloud", "database", "ai", "links", "templates"];
 
 const uiText = {
   zh: {
@@ -113,6 +115,8 @@ const uiText = {
     git: "Git",
     copy: "复制",
     copyAll: "复制全部",
+    copySnippet: "复制整段",
+    copyConfig: "复制 config.toml",
     copyLine: "复制此行",
     editAction: "编辑",
     deleteAction: "删除",
@@ -149,6 +153,7 @@ const uiText = {
     formCategory: "分类",
     formScenario: "场景",
     formCommand: "命令",
+    formSnippetContent: "内容",
     formNote: "备注",
     formTags: "标签",
     saveCard: "保存卡片",
@@ -212,6 +217,8 @@ const uiText = {
     git: "Git",
     copy: "Copy",
     copyAll: "Copy All",
+    copySnippet: "Copy Block",
+    copyConfig: "Copy config.toml",
     copyLine: "Copy this line",
     editAction: "Edit",
     deleteAction: "Delete",
@@ -248,6 +255,7 @@ const uiText = {
     formCategory: "Category",
     formScenario: "Scenario",
     formCommand: "Command",
+    formSnippetContent: "Content",
     formNote: "Note",
     formTags: "Tags",
     saveCard: "Save Card",
@@ -548,7 +556,32 @@ const seedCards = [
     risk: "Check First",
     scenario: "在新设备或重装 Codex 后，需要快速恢复 Xiavier API 中转站配置时使用。",
     scenarioEn: "Use this to restore the Xiavier API relay setup for Codex on a new or rebuilt machine.",
-    command: "base: https://xiavier.com\n\nvim ~/.codex/auth.json\n{\n  \"OPENAI_API_KEY\": \"sk-<替换为你的 Xiavier API Key>\"\n}\n\nvim ~/.codex/config.toml\nmodel_provider = \"Xiavier\"\nmodel = \"gpt-5.5\"\nmodel_reasoning_effort = \"xhigh\"\npreferred_auth_method = \"apikey\"\npersonality = \"pragmatic\"\nnetwork_access = \"enabled\"\n\n[mcp_servers.sqlite-site-db]\nargs = [\"-y\", \"mcp-sqlite\"]\ncommand = \"npx\"\nenabled = true\n\n[model_providers.Xiavier]\nname = \"Xiavier\"\nbase_url = \"https://api.xiavier.com/v1\"\nwire_api = \"responses\"\nrequires_openai_auth = true",
+    layout: "config",
+    command: "model_provider = \"Xiavier\"\nmodel = \"gpt-5.5\"\nmodel_reasoning_effort = \"xhigh\"\npreferred_auth_method = \"apikey\"\npersonality = \"pragmatic\"\nnetwork_access = \"enabled\"\n\n[mcp_servers.sqlite-site-db]\nargs = [\"-y\", \"mcp-sqlite\"]\ncommand = \"npx\"\nenabled = true\n\n[model_providers.Xiavier]\nname = \"Xiavier\"\nbase_url = \"https://api.xiavier.com/v1\"\nwire_api = \"responses\"\nrequires_openai_auth = true",
+    snippets: [
+      {
+        key: "base",
+        label: "入口",
+        target: "base",
+        language: "text",
+        content: "https://xiavier.com"
+      },
+      {
+        key: "auth",
+        label: "auth.json",
+        target: "~/.codex/auth.json",
+        language: "json",
+        content: "{\n  \"OPENAI_API_KEY\": \"sk-<替换为你的 Xiavier API Key>\"\n}"
+      },
+      {
+        key: "config",
+        label: "config.toml",
+        target: "~/.codex/config.toml",
+        language: "toml",
+        primary: true,
+        content: "model_provider = \"Xiavier\"\nmodel = \"gpt-5.5\"\nmodel_reasoning_effort = \"xhigh\"\npreferred_auth_method = \"apikey\"\npersonality = \"pragmatic\"\nnetwork_access = \"enabled\"\n\n[mcp_servers.sqlite-site-db]\nargs = [\"-y\", \"mcp-sqlite\"]\ncommand = \"npx\"\nenabled = true\n\n[model_providers.Xiavier]\nname = \"Xiavier\"\nbase_url = \"https://api.xiavier.com/v1\"\nwire_api = \"responses\"\nrequires_openai_auth = true"
+      }
+    ],
     note: "真实 API Key 不要写进网站源码或 Git 仓库；如果密钥已经暴露，建议在中转站后台重新生成。",
     noteEn: "Never commit a real API key to this site or Git. Rotate the key if it has been exposed.",
     tags: ["ai", "codex", "api-relay", "xiavier", "config"]
@@ -897,7 +930,6 @@ const elements = {
   themeMeta: document.querySelector('meta[name="theme-color"]'),
   brandSub: document.querySelector(".brand p"),
   nav: document.querySelector(".nav"),
-  navItems: Array.from(document.querySelectorAll(".nav-item")),
   clientSelect: null,
   quickSearch: document.getElementById("quickSearch"),
   clearSearch: document.getElementById("clearSearch"),
@@ -940,11 +972,20 @@ const state = {
   favoritesOnly: false,
   selectedId: null,
   editingId: null,
+  editingLayout: null,
   language: localStorage.getItem(storageKeys.language) === "en" ? "en" : "zh",
   syncUser: null,
   syncStatus: "offline",
   isSyncing: false,
-  suppressSync: false
+  suppressSync: false,
+  draggedModule: null,
+  dragMoved: false,
+  navPressTimer: null,
+  navPressButton: null,
+  navPointerId: null,
+  navPointerActive: false,
+  navStartX: 0,
+  navStartY: 0
 };
 
 let favorites = new Set(readJson(storageKeys.favorites, []));
@@ -953,8 +994,10 @@ let editedCards = readJson(storageKeys.editedCards, []).filter(isValidCustomCard
 let deletedCards = new Set(readJson(storageKeys.deletedCards, []));
 let recentCards = readJson(storageKeys.recentCards, []);
 let cardFrequency = readJson(storageKeys.cardFrequency, {});
+let moduleOrder = normalizeModuleOrder(readJson(storageKeys.moduleOrder, defaultModuleOrder));
 
 const systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+applyModuleOrder();
 applyTheme(localStorage.getItem(storageKeys.theme) || systemTheme);
 applyLanguage(state.language);
 bindEvents();
@@ -965,6 +1008,10 @@ function bindEvents() {
   elements.nav?.addEventListener("click", (event) => {
     const button = event.target.closest(".nav-item");
     if (!button) return;
+    if (state.dragMoved) {
+      state.dragMoved = false;
+      return;
+    }
     const nextModule = moduleMeta[button.dataset.module] ? button.dataset.module : "git";
     if (state.module !== nextModule) {
       state.search = "";
@@ -976,6 +1023,53 @@ function bindEvents() {
     syncCategoryUi();
     render();
     scrollMainTop();
+  });
+
+  elements.nav?.addEventListener("pointerdown", (event) => {
+    const handle = event.target.closest(".nav-drag-handle");
+    const button = event.target.closest(".nav-item");
+    if (!button || event.button !== 0) return;
+    state.navPointerActive = true;
+    state.navPointerId = event.pointerId;
+    state.navPressButton = button;
+    state.navStartX = event.clientX;
+    state.navStartY = event.clientY;
+    try {
+      button.setPointerCapture?.(event.pointerId);
+    } catch (error) {
+      // Pointer capture can fail if the browser already released the pointer.
+    }
+    if (handle) {
+      event.preventDefault();
+      startNavSort(button, event.pointerId);
+      return;
+    }
+    clearTimeout(state.navPressTimer);
+    state.navPressTimer = setTimeout(() => {
+      if (!state.navPointerActive || state.navPressButton !== button) return;
+      startNavSort(button, event.pointerId);
+    }, 260);
+  });
+
+  window.addEventListener("pointermove", (event) => {
+    if (!state.navPointerActive || event.pointerId !== state.navPointerId) return;
+    if (!state.draggedModule) return;
+    event.preventDefault?.();
+    const target = getNavItemAtPoint(event.clientX, event.clientY);
+    if (!target || target.dataset.module === state.draggedModule) return;
+    const rect = target.getBoundingClientRect();
+    const placeAfter = event.clientY > rect.top + rect.height / 2;
+    moveNavItem(state.draggedModule, target.dataset.module || "", placeAfter);
+  });
+
+  window.addEventListener("pointerup", (event) => {
+    if (state.navPointerId !== null && event.pointerId !== state.navPointerId) return;
+    finishNavSort();
+  });
+
+  window.addEventListener("pointercancel", (event) => {
+    if (state.navPointerId !== null && event.pointerId !== state.navPointerId) return;
+    cancelNavSort();
   });
 
   elements.quickSearch?.addEventListener("input", debounce((event) => {
@@ -1073,6 +1167,7 @@ function bindEvents() {
     const editButton = event.target.closest("[data-action='edit']");
     const deleteButton = event.target.closest("[data-action='delete']");
     const card = event.target.closest(".command-card");
+    const commandBlock = event.target.closest(".command-block");
 
     if (copyLineButton) {
       event.stopPropagation();
@@ -1105,6 +1200,10 @@ function bindEvents() {
     if (deleteButton) {
       event.stopPropagation();
       handleDeleteCard(deleteButton);
+      return;
+    }
+
+    if (commandBlock || hasTextSelection()) {
       return;
     }
 
@@ -1231,15 +1330,15 @@ function renderCards(cards) {
     const module = moduleMeta[getCardModule(card)] || moduleMeta.git;
     const categoryLabel = getCardCategoryLabel(card);
     const moduleLabel = getCardModuleLabel(card, module, t);
-    const commandLines = card.command.split("\n");
-    const isMultiLine = commandLines.length > 1;
-    const commandHtml = commandLines.map((line) =>
-      `<div class="command-line"><span class="line-text">${escapeHtml(line)}</span><button class="copy-line-button" type="button" data-action="copy-line" data-command="${escapeAttr(line)}" title="${escapeAttr(t.copyLine)}">${escapeHtml(t.copy)}</button></div>`
-    ).join("");
     const title = localizeCard(card, "title");
     const scenario = localizeCard(card, "scenario");
     const titleHtml = state.search ? highlightText(title, state.search) : escapeHtml(title);
     const noteHtml = state.search ? highlightText(scenario, state.search) : escapeHtml(scenario);
+    const snippetHtml = card.layout === "config"
+      ? renderConfigSnippets(card, t)
+      : renderCommandBlock(card, t);
+    const commandLineCount = String(card.command || "").split("\n").length;
+    const copyLabel = card.layout === "config" ? t.copyConfig : commandLineCount > 1 ? t.copyAll : t.copy;
     return `
       <article class="command-card ${getCardClass(card)} ${state.selectedId === card.id ? "selected" : ""}" data-id="${escapeAttr(card.id)}" tabindex="0">
         <header>
@@ -1250,12 +1349,12 @@ function renderCards(cards) {
         </header>
         <div class="card-body">
           <p class="card-note">${noteHtml}</p>
-          <pre class="command-block">${commandHtml}</pre>
+          ${snippetHtml}
         </div>
         <footer class="card-meta">
           <div class="actions">
             <button class="copy-button favorite-button ${isFavorite ? "is-favorite" : ""}" type="button" data-action="favorite" data-id="${escapeAttr(card.id)}" aria-label="${escapeAttr(t.favoriteAction)} ${escapeAttr(title)}">${isFavorite ? "★" : "☆"}</button>
-            <button class="copy-button" type="button" data-action="copy" data-command="${escapeAttr(card.command)}" data-id="${escapeAttr(card.id)}">${isMultiLine ? t.copyAll : t.copy}</button>
+            <button class="copy-button" type="button" data-action="copy" data-command="${escapeAttr(card.command)}" data-id="${escapeAttr(card.id)}">${escapeHtml(copyLabel)}</button>
             <button class="copy-button edit-button" type="button" data-action="edit" data-id="${escapeAttr(card.id)}" aria-label="${escapeAttr(t.editAction)} ${escapeAttr(title)}">${escapeHtml(t.editAction)}</button>
             <button class="copy-button delete-button" type="button" data-action="delete" data-id="${escapeAttr(card.id)}" aria-label="${escapeAttr(t.deleteAction)} ${escapeAttr(title)}">${escapeHtml(t.deleteAction)}</button>
           </div>
@@ -1263,6 +1362,51 @@ function renderCards(cards) {
       </article>
     `;
   }).join("");
+}
+
+function renderCommandBlock(card, t) {
+  const commandLines = String(card.command || "").split("\n");
+  const commandHtml = commandLines.map((line) =>
+    `<div class="command-line"><span class="line-text">${escapeHtml(line)}</span><button class="copy-line-button" type="button" data-action="copy-line" data-command="${escapeAttr(line)}" title="${escapeAttr(t.copyLine)}">${escapeHtml(t.copy)}</button></div>`
+  ).join("");
+  return `<pre class="command-block">${commandHtml}</pre>`;
+}
+
+function renderConfigSnippets(card, t) {
+  const snippets = Array.isArray(card.snippets) && card.snippets.length
+    ? card.snippets
+    : [{
+        label: "配置",
+        target: card.target || "",
+        language: card.language || "toml",
+        content: card.command || "",
+        primary: true
+      }];
+  return `
+    <div class="snippet-stack">
+      ${snippets.map((snippet) => renderSnippet(snippet, card, t)).join("")}
+    </div>
+  `;
+}
+
+function renderSnippet(snippet, card, t) {
+  const target = clean(snippet.target);
+  const label = clean(snippet.label);
+  const language = clean(snippet.language) || "text";
+  const content = String(snippet.content || "");
+  const title = target ? `${label} · ${target}` : label;
+  return `
+    <section class="snippet-block ${snippet.primary ? "is-primary" : ""}">
+      <div class="snippet-head">
+        <div>
+          <strong>${escapeHtml(label)}</strong>
+          ${target ? `<span>${escapeHtml(target)}</span>` : ""}
+        </div>
+        <button class="copy-button snippet-copy" type="button" data-action="copy" data-command="${escapeAttr(content)}" data-id="${escapeAttr(card.id)}" aria-label="${escapeAttr(title)}">${escapeHtml(t.copySnippet)}</button>
+      </div>
+      <pre class="command-block"><code class="language-${escapeAttr(language)}">${escapeHtml(content)}</code></pre>
+    </section>
+  `;
 }
 
 function renderDetail(card) {
@@ -1295,7 +1439,7 @@ function renderDetail(card) {
         <span>${escapeHtml(t.scenario)}</span>
         <strong>${escapeHtml(scenario)}</strong>
       </div>
-      <button class="copy-button copy-all-button" type="button" data-action="copy" data-command="${escapeAttr(card.command)}">${escapeHtml(t.copyGroup)}</button>
+      <button class="copy-button copy-all-button" type="button" data-action="copy" data-command="${escapeAttr(card.command)}">${escapeHtml(card.layout === "config" ? t.copyConfig : t.copyGroup)}</button>
     `;
   }
 }
@@ -1507,7 +1651,7 @@ function relevanceScore(card, query) {
 }
 
 function syncCategoryUi() {
-  elements.navItems.forEach((button) => {
+  getNavItems().forEach((button) => {
     button.classList.toggle("active", (button.dataset.module || "git") === state.module);
   });
   if (elements.quickFilters) {
@@ -1540,7 +1684,7 @@ function applyLanguage(language) {
   elements.clearSearch.textContent = t.clear;
   elements.addCardButton.textContent = t.newCard;
 
-  elements.navItems.forEach((button) => {
+  getNavItems().forEach((button) => {
     const meta = moduleMeta[button.dataset.module] || moduleMeta.git;
     button.querySelector("span").textContent = localizeMeta(meta, "label");
     button.querySelector("small").textContent = localizeMeta(meta, "sub");
@@ -1568,9 +1712,14 @@ function applyLanguage(language) {
   const form = elements.cardForm;
   form.elements.title.placeholder = t.titlePlaceholder;
   form.elements.scenario.placeholder = t.scenarioPlaceholder;
+  form.elements.command.placeholder = t.commandPlaceholder || "git status";
   form.elements.note.placeholder = t.notePlaceholder;
   form.elements.tags.placeholder = t.tagsPlaceholder;
   renderCardCategoryOptions();
+  if (state.editingId && state.editingLayout === "config") {
+    const card = getAllCards().find((item) => item.id === state.editingId);
+    renderSnippetEditor(card);
+  }
 
   renderSyncUi();
   clearCelestialSelection();
@@ -1735,6 +1884,7 @@ function getLocalPayload() {
     deletedCards: Array.from(deletedCards),
     recentCards,
     cardFrequency,
+    moduleOrder,
     clientUpdatedAt: localStorage.getItem(storageKeys.localUpdatedAt) || new Date().toISOString(),
     savedAt: new Date().toISOString()
   };
@@ -1758,6 +1908,7 @@ function mergeCloudPayload(cloudPayload, localPayload, options = {}) {
     deletedCards,
     recentCards: normalizeStringArray(preferenceSource.recentCards || localPayload.recentCards).slice(0, 20),
     cardFrequency: mergeFrequency(cloudPayload.cardFrequency || {}, localPayload.cardFrequency || {}),
+    moduleOrder: normalizeModuleOrder(preferenceSource.moduleOrder || localPayload.moduleOrder),
     clientUpdatedAt: preferLocal ? localPayload.clientUpdatedAt : cloudPayload.clientUpdatedAt || localPayload.clientUpdatedAt,
     savedAt: new Date().toISOString()
   };
@@ -1772,6 +1923,7 @@ function applyCloudPayload(payload) {
   deletedCards = new Set(normalizeStringArray(payload.deletedCards));
   recentCards = Array.isArray(payload.recentCards) ? payload.recentCards.slice(0, 20) : [];
   cardFrequency = payload.cardFrequency && typeof payload.cardFrequency === "object" ? payload.cardFrequency : {};
+  moduleOrder = normalizeModuleOrder(payload.moduleOrder || moduleOrder);
   state.language = payload.language === "en" ? "en" : "zh";
   state.category = "all";
 
@@ -1781,6 +1933,7 @@ function applyCloudPayload(payload) {
   writeJson(storageKeys.deletedCards, Array.from(deletedCards));
   writeJson(storageKeys.recentCards, recentCards);
   writeJson(storageKeys.cardFrequency, cardFrequency);
+  writeJson(storageKeys.moduleOrder, moduleOrder);
   localStorage.setItem(storageKeys.language, state.language);
   if (payload.clientUpdatedAt) localStorage.setItem(storageKeys.localUpdatedAt, payload.clientUpdatedAt);
   if (payload.theme === "light" || payload.theme === "dark") {
@@ -1789,6 +1942,7 @@ function applyCloudPayload(payload) {
   }
 
   applyLanguage(state.language);
+  applyModuleOrder();
   render();
   state.suppressSync = false;
 }
@@ -1864,8 +2018,108 @@ function renderSyncUi() {
   elements.syncSignUp && (elements.syncSignUp.disabled = !supabaseClient || state.isSyncing);
 }
 
+function getOrderedModules() {
+  return normalizeModuleOrder(moduleOrder);
+}
+
+function applyModuleOrder() {
+  const ordered = getOrderedModules();
+  if (!elements.nav) return;
+  const nodes = new Map(getNavItems().map((button) => [button.dataset.module || "git", button]));
+  ordered.forEach((module) => {
+    const button = nodes.get(module);
+    if (button) elements.nav.appendChild(button);
+  });
+}
+
+function commitModuleOrder() {
+  if (!elements.nav) return;
+  const nextOrder = Array.from(elements.nav.querySelectorAll(".nav-item")).map((button) => button.dataset.module || "git");
+  moduleOrder = normalizeModuleOrder(nextOrder);
+  writeJson(storageKeys.moduleOrder, moduleOrder);
+  touchLocalState();
+  scheduleCloudSync({ preferLocal: true });
+}
+
+function startNavSort(button, pointerId) {
+  if (!elements.nav || !button?.classList?.contains("nav-item")) return;
+  const module = button.dataset.module;
+  if (!module || !moduleMeta[module]) return;
+  clearTimeout(state.navPressTimer);
+  state.navPressTimer = null;
+  state.draggedModule = module;
+  state.dragMoved = true;
+  elements.nav.classList.add("is-sorting");
+  getNavItems().forEach((item) => item.classList.toggle("is-dragging", item === button));
+  try {
+    if (pointerId !== undefined && pointerId !== null) button.setPointerCapture?.(pointerId);
+  } catch (error) {
+    // Pointer capture can fail if the browser already released the pointer.
+  }
+}
+
+function finishNavSort() {
+  const shouldCommit = Boolean(state.draggedModule);
+  cleanupNavSort();
+  if (shouldCommit) commitModuleOrder();
+  window.setTimeout(() => {
+    state.dragMoved = false;
+  }, 180);
+}
+
+function cancelNavSort() {
+  cleanupNavSort();
+  window.setTimeout(() => {
+    state.dragMoved = false;
+  }, 180);
+}
+
+function cleanupNavSort() {
+  clearTimeout(state.navPressTimer);
+  state.navPressTimer = null;
+  state.navPointerActive = false;
+  state.navPointerId = null;
+  state.navPressButton = null;
+  state.draggedModule = null;
+  elements.nav?.classList.remove("is-sorting");
+  getNavItems().forEach((item) => item.classList.remove("is-dragging"));
+}
+
+function moveNavItem(module, targetModule, after = false) {
+  if (!elements.nav || !module || !targetModule || module === targetModule) return;
+  const dragging = elements.nav.querySelector(`.nav-item[data-module="${cssEscape(module)}"]`);
+  const target = elements.nav.querySelector(`.nav-item[data-module="${cssEscape(targetModule)}"]`);
+  if (!dragging || !target) return;
+  elements.nav.insertBefore(dragging, after ? target.nextSibling : target);
+  state.dragMoved = true;
+}
+
+function normalizeModuleOrder(list = []) {
+  const seen = new Set();
+  const order = [];
+  [...list, ...defaultModuleOrder].forEach((module) => {
+    if (!moduleMeta[module] || seen.has(module)) return;
+    seen.add(module);
+    order.push(module);
+  });
+  return order;
+}
+
+function getNavItems() {
+  return Array.from(elements.nav?.querySelectorAll(".nav-item") || []);
+}
+
+function getNavItemAtPoint(x, y) {
+  return getNavItems().find((button) => {
+    if (button.dataset.module === state.draggedModule) return false;
+    const rect = button.getBoundingClientRect();
+    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+  }) || null;
+}
+
 function openCardDialog(card = null) {
   state.editingId = card?.id || null;
+  state.editingLayout = card?.layout || null;
   const t = getText();
   const form = elements.cardForm;
   if (!form) return;
@@ -1888,10 +2142,13 @@ function openCardDialog(card = null) {
     form.elements.title.value = card.title || "";
     form.elements.category.value = card.category || form.elements.category.value;
     form.elements.scenario.value = card.scenario || "";
-    form.elements.command.value = card.command || "";
+    form.elements.command.value = getEditableCommand(card);
     form.elements.note.value = card.note || "";
     form.elements.tags.value = Array.isArray(card.tags) ? card.tags.join(", ") : "";
   }
+
+  renderSnippetEditor(card);
+  syncCardDialogMode(card?.layout === "config");
 
   elements.cardDialog?.showModal();
   form.elements.title?.focus();
@@ -1903,9 +2160,32 @@ function openEditCardDialog(id) {
   openCardDialog(card);
 }
 
+function getEditableCommand(card) {
+  if (card?.layout !== "config" || !Array.isArray(card.snippets)) return card?.command || "";
+  const primarySnippet = card.snippets.find((snippet) => snippet.primary) || card.snippets[card.snippets.length - 1];
+  return primarySnippet?.content || card.command || "";
+}
+
+function getConfigSnippetsFromForm(formData, baseCard) {
+  const source = Array.isArray(baseCard?.snippets) && baseCard.snippets.length ? baseCard.snippets : getDefaultConfigSnippets(baseCard);
+  return source.map((snippet, index) => {
+    const key = snippet.key || `snippet-${index}`;
+    return {
+      ...snippet,
+      content: normalizeMultilineInput(formData.get(`snippet-${key}`)),
+      primary: Boolean(snippet.primary),
+      key
+    };
+  });
+}
+
 function resetCardDialog() {
   state.editingId = null;
+  state.editingLayout = null;
   elements.cardForm?.reset();
+  syncCardDialogMode(false);
+  const editor = document.getElementById("snippetEditor");
+  if (editor) editor.innerHTML = "";
   applyCardDialogText();
 }
 
@@ -1921,6 +2201,59 @@ function applyCardDialogText() {
   if (submit) submit.textContent = state.editingId ? t.updateCard : t.saveCard;
 }
 
+function syncCardDialogMode(isConfig) {
+  const commandField = elements.cardForm?.querySelector(".command-field");
+  const editor = document.getElementById("snippetEditor");
+  if (commandField) commandField.hidden = Boolean(isConfig);
+  if (editor) editor.hidden = !isConfig;
+}
+
+function renderSnippetEditor(card) {
+  const editor = document.getElementById("snippetEditor");
+  if (!editor) return;
+  if (!card || card.layout !== "config") {
+    editor.innerHTML = "";
+    editor.hidden = true;
+    return;
+  }
+
+  const snippets = Array.isArray(card.snippets) && card.snippets.length ? card.snippets : getDefaultConfigSnippets(card);
+  const t = getText();
+  editor.hidden = false;
+  editor.innerHTML = snippets.map((snippet, index) => {
+    const key = snippet.key || `snippet-${index}`;
+    return `
+      <section class="snippet-edit-block ${snippet.primary ? "is-primary" : ""}" data-snippet-key="${escapeAttr(key)}">
+        <div class="snippet-head">
+          <div>
+            <strong>${escapeHtml(clean(snippet.label) || `片段 ${index + 1}`)}</strong>
+            ${clean(snippet.target) ? `<span>${escapeHtml(clean(snippet.target))}</span>` : ""}
+          </div>
+        </div>
+        <label class="snippet-edit-field">
+          <span>${escapeHtml(t.formSnippetContent)}</span>
+          <textarea name="snippet-${escapeAttr(key)}" rows="${snippet.primary ? 10 : 5}" data-snippet-key="${escapeAttr(key)}" placeholder="片段内容">${escapeHtml(snippet.content || "")}</textarea>
+        </label>
+      </section>
+    `;
+  }).join("");
+}
+
+function getDefaultConfigSnippets(card) {
+  return [
+    { key: "base", label: "入口", target: "base", language: "text", content: "https://xiavier.com" },
+    { key: "auth", label: "auth.json", target: "~/.codex/auth.json", language: "json", content: "{\n  \"OPENAI_API_KEY\": \"sk-<替换为你的 Xiavier API Key>\"\n}" },
+    {
+      key: "config",
+      label: "config.toml",
+      target: "~/.codex/config.toml",
+      language: "toml",
+      primary: true,
+      content: card?.command || ""
+    }
+  ];
+}
+
 function saveCardForm(formData) {
   if (state.editingId) {
     updateCard(state.editingId, formData);
@@ -1932,7 +2265,11 @@ function saveCardForm(formData) {
 function getCardInput(formData, baseCard = null) {
   const t = getText();
   const title = clean(formData.get("title"));
-  const command = clean(formData.get("command"));
+  const isConfigCard = baseCard?.layout === "config";
+  const snippets = isConfigCard ? getConfigSnippetsFromForm(formData, baseCard) : null;
+  const command = isConfigCard
+    ? clean(snippets?.find((snippet) => snippet.primary)?.content || snippets?.[snippets.length - 1]?.content || "")
+    : clean(formData.get("command"));
   if (!title || !command) {
     showToast(t.titleRequired);
     return null;
@@ -1959,7 +2296,8 @@ function getCardInput(formData, baseCard = null) {
     command,
     scenario: clean(formData.get("scenario")) || t.customScenario,
     note: clean(formData.get("note")),
-    tags: tags.length ? tags : ["custom"]
+    tags: tags.length ? tags : ["custom"],
+    snippets
   };
 }
 
@@ -1979,6 +2317,11 @@ function saveCustomCard(formData) {
     tags: input.tags,
     custom: true
   };
+
+  if (input.snippets) {
+    card.layout = "config";
+    card.snippets = input.snippets;
+  }
 
   customCards = [card, ...customCards];
   writeJson(storageKeys.customCards, customCards);
@@ -2015,6 +2358,11 @@ function updateCard(id, formData) {
     custom: Boolean(currentCard.custom)
   };
 
+  if (currentCard.layout) patch.layout = currentCard.layout;
+  if (currentCard.layout === "config") {
+    patch.snippets = input.snippets || updatePrimarySnippet(currentCard, input.command);
+  }
+
   if (currentCard.custom) {
     customCards = customCards.map((card) => card.id === id ? { ...card, ...patch, custom: true } : card);
     writeJson(storageKeys.customCards, customCards);
@@ -2037,6 +2385,23 @@ function updateCard(id, formData) {
   render();
   touchLocalState();
   scheduleCloudSync({ preferLocal: true });
+}
+
+function updatePrimarySnippet(card, command) {
+  const sourceSnippets = Array.isArray(card.snippets) && card.snippets.length
+    ? card.snippets
+    : [{
+        label: "配置",
+        target: card.target || "",
+        language: card.language || "toml",
+        primary: true,
+        content: card.command || ""
+      }];
+  const primaryIndex = sourceSnippets.findIndex((snippet) => snippet.primary);
+  const targetIndex = primaryIndex >= 0 ? primaryIndex : sourceSnippets.length - 1;
+  return sourceSnippets.map((snippet, index) => (
+    index === targetIndex ? { ...snippet, content: command, primary: true } : { ...snippet }
+  ));
 }
 
 function toggleFavorite(id) {
@@ -2239,6 +2604,20 @@ function applyTheme(theme) {
 
 function clean(value) {
   return String(value || "").trim();
+}
+
+function normalizeMultilineInput(value) {
+  return String(value ?? "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+}
+
+function hasTextSelection() {
+  const selection = window.getSelection?.();
+  return Boolean(selection && !selection.isCollapsed && String(selection.toString()).trim());
+}
+
+function cssEscape(value) {
+  if (window.CSS?.escape) return window.CSS.escape(String(value));
+  return String(value).replace(/["\\]/g, "\\$&");
 }
 
 function readJson(key, fallback) {

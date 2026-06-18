@@ -9,7 +9,7 @@
     <meta property="og:description" content="Git 命令速查面板 · 搜索 / 收藏 / 快速复制" />
     <meta property="og:type" content="website" />
     <title>NanStar Workstation</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2310131f'/><text x='16' y='23' text-anchor='middle' font-family='monospace' font-weight='800' font-size='18' fill='%235ef0dd'>NS</text></svg>" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2310131f'/><text x='16' y='23' text-anchor='middle' font-family='monospace' font-weight='800' font-size='18' fill='%235ef0dd'>NW</text></svg>" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -18,7 +18,7 @@
     <div class="app-shell">
       <aside class="sidebar">
         <div class="brand">
-          <div class="brand-mark" aria-hidden="true"><span>NS</span></div>
+          <div class="brand-mark" aria-hidden="true"><span>NW</span></div>
           <div>
             <h1>NanStar</h1>
             <p>Workstation · Command Atlas</p>
@@ -27,36 +27,44 @@
 
         <nav class="nav" aria-label="工作站模块">
           <button class="nav-item active mercury-nav" type="button" data-module="git">
-            <span>Git</span>
+            <span class="nav-label">Git</span>
             <small>命令速查</small>
+            <span class="nav-drag-handle" aria-hidden="true"></span>
           </button>
           <button class="nav-item jupiter-nav" type="button" data-module="clients">
-            <span>客户</span>
+            <span class="nav-label">客户</span>
             <small>客户项目</small>
+            <span class="nav-drag-handle" aria-hidden="true"></span>
           </button>
           <button class="nav-item earth-nav" type="button" data-module="windows">
-            <span>Windows</span>
+            <span class="nav-label">Windows</span>
             <small>系统命令</small>
+            <span class="nav-drag-handle" aria-hidden="true"></span>
           </button>
           <button class="nav-item venus-nav" type="button" data-module="cloud">
-            <span>Cloud</span>
+            <span class="nav-label">Cloud</span>
             <small>部署入口</small>
+            <span class="nav-drag-handle" aria-hidden="true"></span>
           </button>
           <button class="nav-item saturn-nav" type="button" data-module="database">
-            <span>Database</span>
+            <span class="nav-label">Database</span>
             <small>数据同步</small>
+            <span class="nav-drag-handle" aria-hidden="true"></span>
           </button>
           <button class="nav-item mars-nav" type="button" data-module="ai">
-            <span>AI</span>
+            <span class="nav-label">AI</span>
             <small>提示模板</small>
+            <span class="nav-drag-handle" aria-hidden="true"></span>
           </button>
           <button class="nav-item neptune-nav" type="button" data-module="links">
-            <span>Links</span>
+            <span class="nav-label">Links</span>
             <small>常用入口</small>
+            <span class="nav-drag-handle" aria-hidden="true"></span>
           </button>
           <button class="nav-item uranus-nav" type="button" data-module="templates">
-            <span>Templates</span>
+            <span class="nav-label">Templates</span>
             <small>工作模板</small>
+            <span class="nav-drag-handle" aria-hidden="true"></span>
           </button>
         </nav>
       </aside>
@@ -198,7 +206,8 @@
           </select>
         </label>
         <label><span data-i18n="formScenario">场景</span> <textarea name="scenario" rows="2" placeholder="什么时候用这张卡"></textarea></label>
-        <label><span data-i18n="formCommand">命令</span> <textarea name="command" rows="4" required placeholder="git status"></textarea></label>
+        <label class="command-field"><span data-i18n="formCommand">命令</span> <textarea name="command" rows="4" required placeholder="git status"></textarea></label>
+        <div class="snippet-editor" id="snippetEditor" hidden></div>
         <label><span data-i18n="formNote">备注</span> <textarea name="note" rows="2" placeholder="执行前要注意什么"></textarea></label>
         <label><span data-i18n="formTags">标签</span> <input name="tags" placeholder="用逗号分隔，例如 git,撤销,commit" /></label>
         <button class="primary-button" type="submit" value="default">保存卡片</button>
