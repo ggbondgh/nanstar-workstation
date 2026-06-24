@@ -1101,6 +1101,11 @@ const state = {
   navPointerActive: false,
   navStartX: 0,
   navStartY: 0,
+  navDragOffsetX: 0,
+  navDragOffsetY: 0,
+  navDragWidth: 0,
+  navDragHeight: 0,
+  navPlaceholder: null,
   moduleMenuTarget: null,
   editingModuleId: null,
   scopeMenuTarget: null,
@@ -1185,6 +1190,7 @@ function bindEvents() {
     if (!state.navPointerActive || event.pointerId !== state.navPointerId) return;
     if (!state.draggedModule) return;
     event.preventDefault?.();
+    updateDraggedNavPosition(event.clientX, event.clientY);
     const target = getNavItemAtPoint(event.clientX, event.clientY);
     if (!target || target.dataset.module === state.draggedModule) return;
     const rect = target.getBoundingClientRect();
@@ -1809,7 +1815,10 @@ function openCardZoom(id) {
   state.selectedId = id;
   if (elements.cardZoomEyebrow) elements.cardZoomEyebrow.textContent = categoryLabel;
   if (elements.cardZoomTitle) elements.cardZoomTitle.textContent = title;
-  if (elements.cardZoomClose) elements.cardZoomClose.textContent = t.formClose;
+  if (elements.cardZoomClose) {
+    elements.cardZoomClose.setAttribute("aria-label", t.formClose);
+    elements.cardZoomClose.setAttribute("title", t.formClose);
+  }
   elements.cardZoomBody.innerHTML = `
     ${scenario ? `<p class="zoom-card-scenario">${escapeHtml(scenario)}</p>` : ""}
     ${contentHtml}
@@ -2174,8 +2183,8 @@ function applyLanguage(language) {
   elements.solarExpand?.setAttribute("title", t.solarFullTitle);
   document.querySelector(".solar-overlay-top .eyebrow").textContent = t.solarOverlayEyebrow;
   document.querySelector(".solar-overlay-top h2").textContent = t.solarOverlayTitle;
-  elements.solarClose.textContent = t.close;
-  elements.solarClose.setAttribute("aria-label", t.closeSolar);
+  elements.solarClose?.setAttribute("aria-label", t.closeSolar);
+  elements.solarClose?.setAttribute("title", t.close);
 
   applyCardDialogText();
   applyModuleDialogText();
@@ -2903,12 +2912,28 @@ function startNavSort(button, pointerId) {
   if (!elements.nav || !button?.classList?.contains("nav-item")) return;
   const module = button.dataset.module;
   if (!module || !moduleMeta[module]) return;
+  const rect = button.getBoundingClientRect();
   clearTimeout(state.navPressTimer);
   state.navPressTimer = null;
   state.draggedModule = module;
   state.dragMoved = true;
+  state.navDragOffsetX = state.navStartX - rect.left;
+  state.navDragOffsetY = state.navStartY - rect.top;
+  state.navDragWidth = rect.width;
+  state.navDragHeight = rect.height;
+  state.navPlaceholder = document.createElement("div");
+  state.navPlaceholder.className = "nav-drag-placeholder";
+  state.navPlaceholder.style.height = `${rect.height}px`;
+  state.navPlaceholder.style.width = `${rect.width}px`;
+  button.parentElement?.insertBefore(state.navPlaceholder, button);
   elements.nav.classList.add("is-sorting");
-  getNavItems().forEach((item) => item.classList.toggle("is-dragging", item === button));
+  button.classList.add("is-dragging");
+  button.style.width = `${rect.width}px`;
+  button.style.height = `${rect.height}px`;
+  button.style.left = `${rect.left}px`;
+  button.style.top = `${rect.top}px`;
+  button.style.transform = "translate3d(0, 0, 0) scale(1.035)";
+  updateDraggedNavPosition(state.navStartX || rect.left, state.navStartY || rect.top);
   try {
     if (pointerId !== undefined && pointerId !== null) button.setPointerCapture?.(pointerId);
   } catch (error) {
@@ -2918,6 +2943,10 @@ function startNavSort(button, pointerId) {
 
 function finishNavSort() {
   const shouldCommit = Boolean(state.draggedModule);
+  const dragging = getDraggedNavItem();
+  if (dragging && state.navPlaceholder?.parentElement) {
+    state.navPlaceholder.parentElement.insertBefore(dragging, state.navPlaceholder);
+  }
   cleanupNavSort();
   if (shouldCommit) commitModuleOrder();
   window.setTimeout(() => {
@@ -2935,23 +2964,48 @@ function cancelNavSort() {
 function cleanupNavSort() {
   clearTimeout(state.navPressTimer);
   state.navPressTimer = null;
+  const dragging = getDraggedNavItem();
+  if (dragging) {
+    dragging.classList.remove("is-dragging");
+    dragging.style.width = "";
+    dragging.style.height = "";
+    dragging.style.left = "";
+    dragging.style.top = "";
+    dragging.style.transform = "";
+  }
+  state.navPlaceholder?.remove();
+  state.navPlaceholder = null;
   state.navPointerActive = false;
   state.navPointerId = null;
   state.navPressButton = null;
   state.draggedModule = null;
+  state.navDragOffsetX = 0;
+  state.navDragOffsetY = 0;
+  state.navDragWidth = 0;
+  state.navDragHeight = 0;
   elements.nav?.classList.remove("is-sorting");
-  getNavItems().forEach((item) => item.classList.remove("is-dragging"));
 }
 
 function moveNavItem(module, targetModule, after = false) {
-  if (!elements.nav || !module || !targetModule || module === targetModule) return;
-  const dragging = elements.nav.querySelector(`.nav-item[data-module="${cssEscape(module)}"]`);
+  if (!elements.nav || !module || !targetModule || module === targetModule || !state.navPlaceholder) return;
   const target = elements.nav.querySelector(`.nav-item[data-module="${cssEscape(targetModule)}"]`);
-  if (!dragging || !target) return;
+  if (!target) return;
   const beforeRects = new Map(getNavItems().map((item) => [item, item.getBoundingClientRect()]));
-  elements.nav.insertBefore(dragging, after ? target.nextSibling : target);
+  elements.nav.insertBefore(state.navPlaceholder, after ? target.nextSibling : target);
   animateNavShift(beforeRects);
   state.dragMoved = true;
+}
+
+function updateDraggedNavPosition(x, y) {
+  const dragging = getDraggedNavItem();
+  if (!dragging) return;
+  dragging.style.left = `${x - state.navDragOffsetX}px`;
+  dragging.style.top = `${y - state.navDragOffsetY}px`;
+}
+
+function getDraggedNavItem() {
+  if (!state.draggedModule || !elements.nav) return null;
+  return elements.nav.querySelector(`.nav-item[data-module="${cssEscape(state.draggedModule)}"]`);
 }
 
 function animateNavShift(beforeRects) {
@@ -2997,6 +3051,7 @@ function getNavItems() {
 function getNavItemAtPoint(x, y) {
   return getNavItems().find((button) => {
     if (button.dataset.module === state.draggedModule) return false;
+    if (button.classList.contains("is-dragging")) return false;
     const rect = button.getBoundingClientRect();
     return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
   }) || null;

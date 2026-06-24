@@ -403,15 +403,31 @@ body.theme-light .nav-item.active {
 }
 
 .nav-item.is-dragging {
-  opacity: 0.82;
-  transform: translateX(7px) scale(1.035);
+  position: fixed;
+  opacity: 0.94;
+  pointer-events: none;
   cursor: grabbing;
-  z-index: 2;
+  z-index: 60;
   border-color: color-mix(in srgb, var(--planet-color) 78%, var(--accent));
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--planet-color) 34%, rgba(255, 255, 255, 0.12)),
     0 18px 38px rgba(3, 8, 18, 0.34),
     0 0 28px color-mix(in srgb, var(--planet-color) 26%, transparent);
+  transition: box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.nav-drag-placeholder {
+  min-height: 42px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 42%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 8%, rgba(255, 255, 255, 0.035));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);
+  animation: nav-placeholder-pop 180ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+@keyframes nav-placeholder-pop {
+  from { transform: scaleY(0.82); opacity: 0.45; }
+  to { transform: scaleY(1); opacity: 1; }
 }
 
 .nav-item.active small {
@@ -1089,6 +1105,23 @@ body.theme-light .command-card {
   opacity: 0.72;
 }
 
+.shrink-button {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
+  background: color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.05));
+  color: var(--accent);
+}
+
+.shrink-button:hover,
+.shrink-button:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 62%, var(--line));
+  background: color-mix(in srgb, var(--accent) 16%, rgba(255, 255, 255, 0.08));
+}
+
 .card-zoom-button:hover,
 .card-zoom-button:focus-visible {
   border-color: color-mix(in srgb, var(--card-color) 42%, var(--line));
@@ -1641,23 +1674,50 @@ body.theme-light .detail-note {
   aspect-ratio: 1;
 }
 
-.expand-icon {
+.expand-icon,
+.shrink-icon {
+  position: relative;
   display: inline-block;
-  width: 16px;
-  height: 16px;
-  background:
-    linear-gradient(currentColor 0 0) left top / 7px 2px no-repeat,
-    linear-gradient(currentColor 0 0) left top / 2px 7px no-repeat,
-    linear-gradient(currentColor 0 0) right top / 7px 2px no-repeat,
-    linear-gradient(currentColor 0 0) right top / 2px 7px no-repeat,
-    linear-gradient(currentColor 0 0) left bottom / 7px 2px no-repeat,
-    linear-gradient(currentColor 0 0) left bottom / 2px 7px no-repeat,
-    linear-gradient(currentColor 0 0) right bottom / 7px 2px no-repeat,
-    linear-gradient(currentColor 0 0) right bottom / 2px 7px no-repeat;
+  width: 18px;
+  height: 18px;
+  transition: transform 160ms ease;
 }
 
+.expand-icon::before,
+.expand-icon::after,
+.shrink-icon::before,
+.shrink-icon::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  background:
+    linear-gradient(currentColor 0 0) left top / 8px 2px no-repeat,
+    linear-gradient(currentColor 0 0) left top / 2px 8px no-repeat,
+    linear-gradient(currentColor 0 0) right bottom / 8px 2px no-repeat,
+    linear-gradient(currentColor 0 0) right bottom / 2px 8px no-repeat;
+}
+
+.expand-icon::after,
+.shrink-icon::after {
+  transform: rotate(180deg);
+}
+
+.expand-icon {
+  transform: rotate(45deg);
+}
+
+.shrink-icon {
+  transform: rotate(225deg);
+}
+
+.card-zoom-button:hover .expand-icon,
 .solar-expand:hover .expand-icon {
-  transform: scale(1.06);
+  transform: rotate(45deg) scale(1.12);
+}
+
+.shrink-button:hover .shrink-icon,
+.solar-close:hover .shrink-icon {
+  transform: rotate(225deg) scale(0.9);
 }
 
 .freq-badge {
@@ -1952,8 +2012,25 @@ body.theme-light .celestial-info {
   border: 1px solid var(--line-strong);
   background: rgba(12, 16, 28, 0.96);
   color: var(--text);
+  opacity: 0;
   padding: 0;
+  transform: scale(0.965) translateY(10px);
+  transition:
+    opacity 180ms ease,
+    transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1);
 
+}
+
+.card-dialog[open] {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+@starting-style {
+  .card-dialog[open] {
+    opacity: 0;
+    transform: scale(0.965) translateY(10px);
+  }
 }
 
 .module-dialog {
@@ -1965,12 +2042,17 @@ body.theme-light .card-dialog {
 }
 
 .card-dialog::backdrop {
-  background: rgba(3, 8, 18, 0.54);
+  background: rgba(3, 8, 18, 0.58);
+  backdrop-filter: blur(10px) saturate(1.15);
+  transition: backdrop-filter 180ms ease, background 180ms ease;
 }
 
 .card-zoom-dialog {
   width: min(980px, calc(100vw - 44px));
   max-height: min(82vh, 860px);
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.45),
+    0 0 46px rgba(94, 240, 221, 0.12);
 }
 
 .zoom-card-shell {
