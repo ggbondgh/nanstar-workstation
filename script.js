@@ -2004,6 +2004,8 @@ function getLocalPayload() {
 function mergeCloudPayload(cloudPayload, localPayload, options = {}) {
   const preferLocal = options.preferLocal || isLocalNewer(localPayload, cloudPayload);
   const preferenceSource = preferLocal ? localPayload : cloudPayload;
+  const primaryCards = preferLocal ? localPayload : cloudPayload;
+  const secondaryCards = preferLocal ? cloudPayload : localPayload;
   const mergedCustomModules = normalizeCustomModules(preferenceSource.customModules || localPayload.customModules || []);
   const deletedCards = normalizeStringArray([
     ...normalizeStringArray(cloudPayload.deletedCards),
@@ -2015,8 +2017,8 @@ function mergeCloudPayload(cloudPayload, localPayload, options = {}) {
     theme: preferenceSource.theme || localPayload.theme,
     language: preferenceSource.language || localPayload.language,
     favorites: normalizeStringArray(preferenceSource.favorites || localPayload.favorites),
-    customCards: mergeCards(cloudPayload.customCards || [], localPayload.customCards || [], deletedCards),
-    editedCards: mergeCards(cloudPayload.editedCards || [], localPayload.editedCards || [], deletedCards),
+    customCards: mergeCards(primaryCards.customCards || [], secondaryCards.customCards || [], deletedCards),
+    editedCards: mergeCards(primaryCards.editedCards || [], secondaryCards.editedCards || [], deletedCards),
     deletedCards,
     recentCards: normalizeStringArray(preferenceSource.recentCards || localPayload.recentCards).slice(0, 20),
     cardFrequency: mergeFrequency(cloudPayload.cardFrequency || {}, localPayload.cardFrequency || {}),
