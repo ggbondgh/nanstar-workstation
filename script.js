@@ -1740,8 +1740,6 @@ function localizeMeta(meta, key) {
 
 function localizeCard(card, key) {
   if (!card) return "";
-  if (card.edited) return card[key] || card[`${key}En`] || "";
-  if (state.language === "en" && !card.custom) return card[`${key}En`] || card[key] || "";
   return card[key] || "";
 }
 
