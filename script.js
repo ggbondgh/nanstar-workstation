@@ -1452,11 +1452,20 @@ function renderCards(cards) {
 }
 
 function renderCommandBlock(card, t) {
+  if (shouldRenderPlainCommandBlock(card)) {
+    return `<pre class="command-block command-block-plain"><code>${escapeHtml(card.command || "")}</code></pre>`;
+  }
+
   const commandLines = String(card.command || "").split("\n");
   const commandHtml = commandLines.map((line) =>
     `<div class="command-line"><span class="line-text">${escapeHtml(line)}</span><button class="copy-line-button" type="button" data-action="copy-line" data-command="${escapeAttr(line)}" title="${escapeAttr(t.copyLine)}">${escapeHtml(t.copy)}</button></div>`
   ).join("");
   return `<pre class="command-block">${commandHtml}</pre>`;
+}
+
+function shouldRenderPlainCommandBlock(card) {
+  const module = getCardModule(card);
+  return card?.category === "wk-snippets" || Boolean(card?.custom && module !== "git");
 }
 
 function renderConfigSnippets(card, t) {
@@ -2582,7 +2591,7 @@ function getCardInput(formData, baseCard = null) {
   const snippets = isConfigCard ? getConfigSnippetsFromForm(formData, baseCard) : null;
   const command = isConfigCard
     ? clean(snippets?.find((snippet) => snippet.primary)?.content || snippets?.[snippets.length - 1]?.content || "")
-    : clean(formData.get("command"));
+    : normalizeMultilineInput(formData.get("command"));
   if (!title || !command) {
     showToast(t.titleRequired);
     return null;

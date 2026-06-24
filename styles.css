@@ -1096,6 +1096,22 @@ code {
   user-select: text;
 }
 
+.command-block-plain {
+  overflow: auto;
+  border: 1px solid rgba(94, 240, 221, 0.13);
+  background: rgba(3, 7, 14, 0.84);
+  padding: 12px 14px;
+  cursor: text;
+}
+
+.command-block-plain code {
+  display: block;
+  color: var(--code);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
 .command-block::selection,
 .command-block *::selection {
   background: rgba(89, 150, 255, 0.68);
@@ -1186,6 +1202,15 @@ body.theme-light .snippet-block.is-primary {
 body.theme-light .snippet-block .command-block {
   border-color: rgba(58, 143, 186, 0.14);
   background: rgba(239, 248, 252, 0.94);
+}
+
+body.theme-light .command-block-plain {
+  border-color: rgba(58, 143, 186, 0.14);
+  background: rgba(239, 248, 252, 0.94);
+}
+
+body.theme-light .command-block-plain code {
+  color: #12344a;
 }
 
 .command-line {
