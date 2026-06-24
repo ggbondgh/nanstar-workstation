@@ -1169,7 +1169,7 @@ code {
 
 .section-lines {
   display: none;
-  overflow: hidden;
+  overflow: auto;
   padding: 0;
   border: 1px solid rgba(94, 240, 221, 0.12);
   background: rgba(3, 7, 14, 0.78);
@@ -1271,19 +1271,17 @@ body.theme-light .snippet-block.is-primary {
 }
 
 body.theme-light .snippet-block .command-block {
-  border-color: rgba(58, 143, 186, 0.14);
-  background: rgba(239, 248, 252, 0.94);
+  border-color: rgba(38, 115, 154, 0.28);
+  background: rgba(13, 33, 50, 0.92);
 }
 
 body.theme-light .command-block-plain {
-  border-color: rgba(52, 135, 176, 0.18);
-  background:
-    linear-gradient(180deg, rgba(248, 254, 255, 0.92), rgba(232, 247, 252, 0.86)),
-    rgba(239, 248, 252, 0.94);
+  border-color: rgba(38, 115, 154, 0.28);
+  background: rgba(13, 33, 50, 0.92);
 }
 
 body.theme-light .command-block-plain code {
-  color: var(--code-light);
+  color: var(--code);
 }
 
 body.theme-light .card-section-block {
@@ -1306,19 +1304,17 @@ body.theme-light .section-toggle-button {
 }
 
 body.theme-light .section-lines {
-  border-color: rgba(52, 135, 176, 0.18);
-  background:
-    linear-gradient(180deg, rgba(248, 254, 255, 0.92), rgba(232, 247, 252, 0.86)),
-    rgba(239, 248, 252, 0.94);
+  border-color: rgba(38, 115, 154, 0.28);
+  background: rgba(13, 33, 50, 0.92);
 }
 
 body.theme-light .card-section-block .section-plain code {
-  color: var(--code-light);
+  color: var(--code);
 }
 
 body.theme-light .card-section-block.is-expanded .copy-line-button {
-  background: rgba(240, 251, 255, 0.92);
-  color: #17617e;
+  background: rgba(8, 22, 35, 0.92);
+  color: var(--accent);
 }
 
 .command-line {
@@ -1391,7 +1387,11 @@ body.theme-light .command-line {
 }
 
 body.theme-light .section-lines .command-line .line-text {
-  color: var(--code-light);
+  color: var(--code);
+  white-space: pre-wrap;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
 }
 
 body.theme-light .command-line:hover {
