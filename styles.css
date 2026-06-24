@@ -462,7 +462,8 @@ body.theme-light .add-module-button {
   background: rgba(239, 250, 255, 0.58);
 }
 
-.module-menu {
+.module-menu,
+.scope-menu {
   position: fixed;
   z-index: 45;
   display: grid;
@@ -475,15 +476,18 @@ body.theme-light .add-module-button {
   padding: 6px;
 }
 
-body.theme-light .module-menu {
+body.theme-light .module-menu,
+body.theme-light .scope-menu {
   background: rgba(237, 250, 255, 0.98);
 }
 
-.module-menu[hidden] {
+.module-menu[hidden],
+.scope-menu[hidden] {
   display: none;
 }
 
-.module-menu button {
+.module-menu button,
+.scope-menu button {
   width: 100%;
   border: 0;
   border-radius: 6px;
@@ -496,21 +500,25 @@ body.theme-light .module-menu {
   font-size: 13px;
 }
 
-.module-menu button:hover:not(:disabled) {
+.module-menu button:hover:not(:disabled),
+.scope-menu button:hover:not(:disabled) {
   background: rgba(94, 240, 221, 0.12);
 }
 
-.module-menu button.danger:hover:not(:disabled) {
+.module-menu button.danger:hover:not(:disabled),
+.scope-menu button.danger:hover:not(:disabled) {
   background: rgba(255, 92, 122, 0.14);
   color: #ff8da2;
 }
 
-.module-menu button.is-confirming {
+.module-menu button.is-confirming,
+.scope-menu button.is-confirming {
   background: rgba(255, 92, 122, 0.16);
   color: #ff8da2;
 }
 
-.module-menu button:disabled {
+.module-menu button:disabled,
+.scope-menu button:disabled {
   cursor: not-allowed;
   opacity: 0.42;
 }
@@ -623,51 +631,66 @@ body.theme-light .module-menu {
   justify-content: flex-end;
 }
 
-.client-controls {
-  display: inline-flex;
-  min-height: 38px;
+.module-scope-bar {
+  margin: -6px 0 16px;
+}
+
+.module-scope-bar[hidden] {
+  display: none;
+}
+
+.scope-track {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  width: fit-content;
-  justify-self: end;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.035);
-  padding: 4px 5px 4px 12px;
 }
 
-.focus-panel.has-client-controls {
-  position: relative;
-  padding-top: 20px;
-}
-
-.focus-panel > .client-controls {
-  position: absolute;
-  top: 14px;
-  right: 16px;
-  z-index: 3;
-  box-shadow: 0 10px 24px rgba(3, 8, 18, 0.16);
-}
-
-.focus-panel.has-client-controls .search-console {
-  padding-top: 44px;
-}
-
-.client-controls label {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.client-controls select {
-  min-height: 30px;
-  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
-  border-radius: 6px;
-  background: rgba(8, 12, 22, 0.74);
-  color: var(--text);
-  padding: 0 12px;
+.scope-chip,
+.scope-add-button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid color-mix(in srgb, var(--jupiter) 34%, var(--line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--jupiter) 7%, rgba(255, 255, 255, 0.045));
+  color: var(--soft);
+  cursor: pointer;
+  padding: 0 14px;
+  font: inherit;
   font-size: 13px;
   font-weight: 800;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 180ms ease;
+}
+
+.scope-chip:hover,
+.scope-add-button:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--jupiter) 62%, var(--line));
+  color: var(--text);
+}
+
+.scope-chip.active {
+  border-color: color-mix(in srgb, var(--jupiter) 80%, var(--accent));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--jupiter) 30%, rgba(255, 255, 255, 0.08)), rgba(255, 255, 255, 0.055));
+  color: var(--text);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--jupiter) 18%, transparent);
+}
+
+.scope-add-button {
+  border-style: dashed;
+  color: var(--accent);
+}
+
+.scope-add-button span {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 46%, var(--line));
+  border-radius: 999px;
 }
 
 .primary-button,
@@ -732,15 +755,17 @@ body.theme-light .copy-button,
 body.theme-light .solar-expand,
 body.theme-light .solar-close,
 body.theme-light .signal-row button,
-body.theme-light .client-controls {
+body.theme-light .scope-chip,
+body.theme-light .scope-add-button {
   border-color: rgba(34, 121, 168, 0.18);
   background: rgba(236, 250, 255, 0.46);
   color: #28506d;
 }
 
-body.theme-light .client-controls select {
-  background: rgba(255, 255, 255, 0.62);
-  color: #0f3a56;
+body.theme-light .scope-chip.active {
+  border-color: rgba(35, 135, 178, 0.55);
+  background: linear-gradient(135deg, rgba(120, 216, 235, 0.56), rgba(241, 253, 255, 0.66));
+  color: #0d3652;
 }
 
 .ghost-button,
@@ -2048,6 +2073,14 @@ body.theme-light #cardForm > .primary-button[type="submit"] {
 
 }
 
+.category-field {
+  grid-template-columns: 1fr;
+}
+
+.category-field .new-category-input[hidden] {
+  display: none;
+}
+
 .card-form input,
 .card-form textarea,
 .card-form select {
@@ -2234,14 +2267,6 @@ body.theme-light .sync-status {
   .focus-panel,
   .workspace-grid {
     grid-template-columns: 1fr;
-  }
-
-  .focus-panel.has-client-controls {
-    padding-top: 64px;
-  }
-
-  .focus-panel.has-client-controls .search-console {
-    padding-top: 0;
   }
 
   .sidebar {

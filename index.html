@@ -67,6 +67,8 @@
           </div>
         </header>
 
+        <section class="module-scope-bar" id="moduleScopeBar" hidden></section>
+
         <section class="focus-panel workstation-hero">
           <div class="focus-copy">
             <p class="eyebrow">Command Locate</p>
@@ -169,7 +171,7 @@
           <button class="ghost-button compact" value="cancel" type="submit" formnovalidate>关闭</button>
         </div>
         <label><span data-i18n="formTitle">标题</span> <input name="title" required placeholder="例如：撤销最近一次 commit" /></label>
-        <label><span data-i18n="formCategory">分类</span>
+        <label class="category-field"><span data-i18n="formCategory">分类</span>
           <select name="category">
             <option value="daily">日常</option>
             <option value="config">配置</option>
@@ -178,6 +180,7 @@
             <option value="stash">暂存</option>
             <option value="danger">危险</option>
           </select>
+          <input name="newCategory" class="new-category-input" placeholder="新分类名（可选）" hidden />
         </label>
         <label><span data-i18n="formScenario">场景</span> <textarea name="scenario" rows="2" placeholder="什么时候用这张卡"></textarea></label>
         <label class="command-field"><span data-i18n="formCommand">命令</span> <textarea name="command" rows="4" required placeholder="git status"></textarea></label>
@@ -236,8 +239,23 @@
       </form>
     </dialog>
 
+    <dialog class="card-dialog scope-dialog" id="scopeDialog">
+      <form method="dialog" class="card-form" id="scopeForm">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow" id="scopeDialogEyebrow">Scope / Group</p>
+            <h3 id="scopeDialogTitle">添加分组</h3>
+          </div>
+          <button class="ghost-button compact" value="cancel" type="submit" formnovalidate data-i18n="formClose">关闭</button>
+        </div>
+        <label><span data-i18n="scopePrompt">分组名称</span> <input name="name" required placeholder="例如：微克" /></label>
+        <button class="primary-button" id="scopeSubmitButton" type="submit" value="default">保存分组</button>
+      </form>
+    </dialog>
+
     <div class="toast" id="toast">Copied to clipboard</div>
     <div class="module-menu" id="moduleMenu" hidden></div>
+    <div class="scope-menu" id="scopeMenu" hidden></div>
     <dialog class="card-dialog card-zoom-dialog" id="cardZoomDialog">
       <div class="zoom-card-shell">
         <div class="zoom-card-head">

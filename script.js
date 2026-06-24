@@ -9,6 +9,7 @@ const storageKeys = {
   cardFrequency: "nanstar-workstation-frequency",
   customModules: "nanstar-workstation-custom-modules",
   moduleOrder: "nanstar-workstation-module-order",
+  customClientScopes: "nanstar-workstation-custom-client-scopes",
   syncEmail: "nanstar-workstation-sync-email",
   localUpdatedAt: "nanstar-workstation-local-updated-at"
 };
@@ -49,9 +50,15 @@ let moduleMeta = {
 
 const builtInModuleMeta = { ...moduleMeta };
 
-const clientMeta = {
+const builtInClientMeta = {
   wk: { label: "微克", labelEn: "WK", title: "微克客户资料", titleEn: "WK Client Notes" }
 };
+
+let clientMeta = { ...builtInClientMeta };
+const defaultClientScope = "wk";
+const newCategoryValue = "__new__";
+const clientCategoryPrefix = "clientcat:";
+const moduleCategoryPrefix = "modulecat:";
 
 const clientCategoryMeta = {
   all: { label: "全部", labelEn: "All" },
@@ -126,6 +133,22 @@ const uiText = {
     renameModule: "重命名",
     deleteModule: "删除模块",
     deleteModuleConfirm: "删除该模块和其中的自定义卡片？",
+    scopePrompt: "子模块名称",
+    scopeAddTitle: "添加子模块",
+    scopeEditTitle: "重命名子模块",
+    scopeSave: "保存子模块",
+    scopeNameRequired: "子模块名称不能为空",
+    scopeCreated: "子模块已添加",
+    scopeRenamed: "子模块已重命名",
+    scopeDeleted: "子模块已删除",
+    scopeDeleteHint: "再次点击确认删除",
+    addScope: "添加子模块",
+    renameScope: "重命名",
+    deleteScope: "删除子模块",
+    coreScopeLocked: "默认子模块不可删除",
+    noCategory: "无分类",
+    newCategory: "新分类...",
+    newCategoryPlaceholder: "输入新分类名",
     resultEyebrow: "Command Cards / 命令卡片",
     favoriteCards: "收藏卡片",
     favoritedCommands: "已收藏命令",
@@ -253,6 +276,22 @@ const uiText = {
     renameModule: "Rename",
     deleteModule: "Delete module",
     deleteModuleConfirm: "Delete this module and its custom cards?",
+    scopePrompt: "Submodule name",
+    scopeAddTitle: "Add Submodule",
+    scopeEditTitle: "Rename Submodule",
+    scopeSave: "Save Submodule",
+    scopeNameRequired: "Submodule name is required",
+    scopeCreated: "Submodule added",
+    scopeRenamed: "Submodule renamed",
+    scopeDeleted: "Submodule deleted",
+    scopeDeleteHint: "Click again to delete",
+    addScope: "Add Submodule",
+    renameScope: "Rename",
+    deleteScope: "Delete submodule",
+    coreScopeLocked: "Default submodule cannot be deleted",
+    noCategory: "No category",
+    newCategory: "New category...",
+    newCategoryPlaceholder: "New category name",
     resultEyebrow: "Command Cards",
     favoriteCards: "Favorite Cards",
     favoritedCommands: "Favorited Commands",
@@ -992,7 +1031,13 @@ const elements = {
   moduleDialogEyebrow: document.getElementById("moduleDialogEyebrow"),
   moduleDialogTitle: document.getElementById("moduleDialogTitle"),
   moduleSubmitButton: document.getElementById("moduleSubmitButton"),
-  clientSelect: null,
+  moduleScopeBar: document.getElementById("moduleScopeBar"),
+  scopeMenu: document.getElementById("scopeMenu"),
+  scopeDialog: document.getElementById("scopeDialog"),
+  scopeForm: document.getElementById("scopeForm"),
+  scopeDialogEyebrow: document.getElementById("scopeDialogEyebrow"),
+  scopeDialogTitle: document.getElementById("scopeDialogTitle"),
+  scopeSubmitButton: document.getElementById("scopeSubmitButton"),
   quickSearch: document.getElementById("quickSearch"),
   clearSearch: document.getElementById("clearSearch"),
   quickFilters: document.getElementById("quickFilters"),
@@ -1057,7 +1102,9 @@ const state = {
   navStartX: 0,
   navStartY: 0,
   moduleMenuTarget: null,
-  editingModuleId: null
+  editingModuleId: null,
+  scopeMenuTarget: null,
+  editingScopeId: null
 };
 
 let favorites = new Set(readJson(storageKeys.favorites, []));
@@ -1068,6 +1115,8 @@ let recentCards = readJson(storageKeys.recentCards, []);
 let cardFrequency = readJson(storageKeys.cardFrequency, {});
 let customModules = readJson(storageKeys.customModules, []).filter(isValidCustomModule);
 let moduleOrder = normalizeModuleOrder(readJson(storageKeys.moduleOrder, defaultModuleOrder));
+let customClientScopes = normalizeCustomClientScopes(readJson(storageKeys.customClientScopes, []));
+clientMeta = buildClientMeta();
 
 const systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
 renderNav();
@@ -1091,6 +1140,7 @@ function bindEvents() {
       if (elements.quickSearch) elements.quickSearch.value = "";
     }
     state.module = nextModule;
+    if (state.module === "clients") ensureValidClientScope();
     state.category = "all";
     state.favoritesOnly = false;
     syncCategoryUi();
@@ -1166,13 +1216,36 @@ function bindEvents() {
   elements.quickFilters?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-filter]");
     if (!button) return;
-    if (state.module !== "git" && state.module !== "clients") return;
     const nextCategory = button.dataset.filter || "all";
     state.category = state.category === nextCategory ? "all" : nextCategory;
     state.favoritesOnly = false;
     syncCategoryUi();
     render();
     scrollMainTop();
+  });
+
+  elements.moduleScopeBar?.addEventListener("click", (event) => {
+    const scopeButton = event.target.closest("[data-client-scope]");
+    const addButton = event.target.closest("[data-scope-action='add']");
+    if (addButton) {
+      openScopeDialog();
+      return;
+    }
+    if (!scopeButton) return;
+    const nextClient = scopeButton.dataset.clientScope || defaultClientScope;
+    state.client = clientMeta[nextClient] ? nextClient : defaultClientScope;
+    state.category = "all";
+    state.selectedId = null;
+    state.favoritesOnly = false;
+    render();
+    scrollMainTop();
+  });
+
+  elements.moduleScopeBar?.addEventListener("contextmenu", (event) => {
+    const scopeButton = event.target.closest("[data-client-scope]");
+    if (!scopeButton) return;
+    event.preventDefault();
+    openScopeMenu(scopeButton.dataset.clientScope || "", event.clientX, event.clientY);
   });
 
   elements.showFavorites?.addEventListener("click", () => {
@@ -1210,14 +1283,44 @@ function bindEvents() {
     if (action === "delete") handleDeleteModuleMenu(button, state.moduleMenuTarget);
   });
 
+  elements.scopeForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (event.submitter?.value === "cancel") {
+      elements.scopeDialog?.close("cancel");
+      resetScopeDialog();
+      return;
+    }
+    saveScopeForm(new FormData(elements.scopeForm));
+  });
+
+  elements.scopeMenu?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-scope-menu-action]");
+    const action = button?.dataset.scopeMenuAction;
+    if (!button || !action || !state.scopeMenuTarget) return;
+    if (action === "rename") {
+      openScopeDialog(state.scopeMenuTarget);
+      closeScopeMenu();
+    }
+    if (action === "delete") handleDeleteScopeMenu(button, state.scopeMenuTarget);
+  });
+
   document.addEventListener("click", (event) => {
     if (!elements.moduleMenu || elements.moduleMenu.hidden) return;
     if (event.target.closest("#moduleMenu")) return;
     closeModuleMenu();
   });
 
+  document.addEventListener("click", (event) => {
+    if (!elements.scopeMenu || elements.scopeMenu.hidden) return;
+    if (event.target.closest("#scopeMenu")) return;
+    closeScopeMenu();
+  });
+
   window.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeModuleMenu();
+    if (event.key === "Escape") {
+      closeModuleMenu();
+      closeScopeMenu();
+    }
   });
 
   elements.syncButton?.addEventListener("click", () => {
@@ -1256,6 +1359,10 @@ function bindEvents() {
       return;
     }
     saveCardForm(new FormData(elements.cardForm));
+  });
+
+  elements.cardForm?.elements.category?.addEventListener("change", () => {
+    syncCategoryInputUi();
   });
 
   elements.addSectionButton?.addEventListener("click", () => {
@@ -1453,6 +1560,7 @@ function bindEvents() {
 }
 
 function render() {
+  if (state.module === "clients") ensureValidClientScope();
   const cards = getAllCards();
   const visibleCards = filterCards(cards);
   const moduleCards = cards.filter((card) => isCardInCurrentModuleForCount(card, state.module));
@@ -1473,14 +1581,14 @@ function render() {
 
 function renderHeader(visibleCount, totalCount) {
   const module = moduleMeta[state.module] || moduleMeta.git;
-  const category = state.module === "clients" ? clientCategoryMeta[state.category] || clientCategoryMeta.all : categoryMeta[state.category] || categoryMeta.all;
+  const category = categoryMeta[state.category] || categoryMeta.all;
   const t = getText();
   const modeLabel = state.favoritesOnly ? t.favorites : null;
   elements.pageEyebrow.textContent = modeLabel ? `${localizeMeta(module, "label")} / ${modeLabel}` : module.eyebrow;
   elements.pageTitle.textContent = modeLabel ? t.favoriteCards : localizeMeta(module, "title");
   elements.resultEyebrow.textContent = modeLabel ? t.favoriteCards : t.resultEyebrow;
   elements.resultTitle.textContent = getResultTitle(module, category, modeLabel, t);
-  renderClientControls();
+  renderModuleScopes();
   renderQuickFilters();
   elements.resultCount.textContent = `${visibleCount} ${t.cardsUnit}`;
   if (elements.totalCount) elements.totalCount.textContent = String(totalCount);
@@ -1511,6 +1619,7 @@ function renderCards(cards) {
     const module = moduleMeta[getCardModule(card)] || moduleMeta.git;
     const categoryLabel = getCardCategoryLabel(card);
     const moduleLabel = getCardModuleLabel(card, module, t);
+    const typeLabel = [categoryLabel, card.custom ? t.custom : moduleLabel].filter(Boolean).join(" / ");
     const title = localizeCard(card, "title");
     const scenario = getDisplayScenario(card);
     const titleHtml = state.search ? highlightText(title, state.search) : escapeHtml(title);
@@ -1524,7 +1633,7 @@ function renderCards(cards) {
       <article class="command-card ${getCardClass(card)} ${state.selectedId === card.id ? "selected" : ""}" data-id="${escapeAttr(card.id)}" tabindex="0">
         <header>
           <div class="card-head">
-            <span class="card-type">${escapeHtml(categoryLabel)} / ${card.custom ? t.custom : moduleLabel}</span>
+            <span class="card-type">${escapeHtml(typeLabel)}</span>
             <h4>${titleHtml}</h4>
           </div>
           <button class="card-zoom-button icon-button" type="button" data-action="zoom" data-id="${escapeAttr(card.id)}" aria-label="${escapeAttr(t.zoomCard)}" title="${escapeAttr(t.zoomCard)}">
@@ -1673,9 +1782,9 @@ function renderDetail(card) {
     detailContent.innerHTML = `
       <h3>${escapeHtml(title)}</h3>
       ${detailText ? `<p>${escapeHtml(detailText)}</p>` : ""}
-      <div class="detail-summary">
+      ${categoryLabel ? `<div class="detail-summary">
         <div><span>${escapeHtml(t.category)}</span><strong>${escapeHtml(categoryLabel)}</strong></div>
-      </div>
+      </div>` : ""}
       ${scenario ? `<div class="detail-note">
         <span>${escapeHtml(t.scenario)}</span>
         <strong>${escapeHtml(scenario)}</strong>
@@ -1721,7 +1830,8 @@ function getAllCards() {
 }
 
 function getCardClient(card) {
-  return clientMeta[card?.client] ? card.client : null;
+  if (getCardModule(card) !== "clients") return null;
+  return clientMeta[card?.client] ? card.client : defaultClientScope;
 }
 
 function getText() {
@@ -1730,6 +1840,35 @@ function getText() {
 
 function localizeClientCategory(category, fallback = "") {
   return localizeMeta(clientCategoryMeta[category], "label") || fallback || category;
+}
+
+function getClientCategoryLabel(category) {
+  if (category === "all") return localizeMeta(clientCategoryMeta.all, "label");
+  return localizeClientCategory(category, getReadableCategoryName(category));
+}
+
+function getReadableCategoryName(category) {
+  const value = clean(category)
+    .replace(/^clientcat:[^:]+:/, "")
+    .replace(/^modulecat:[^:]+:/, "")
+    .replace(/^client-client-\d+-[a-z0-9]+-/, "")
+    .replace(/^module-module-\d+-[a-z0-9]+-/, "")
+    .replace(/^client-[^-]+-/, "")
+    .replace(/^module-[^-]+-[^-]+-/, "")
+    .replace(/^wk-/, "");
+  return value || category;
+}
+
+function normalizeCardCategory(value, moduleId, fallback = "") {
+  const raw = clean(value);
+  if (!raw || raw === "all") return moduleId;
+  if (raw === newCategoryValue) return fallback || (moduleId === "clients" ? "" : moduleId);
+  if (raw === moduleId) return moduleId;
+  if (moduleId === "clients" && (clientCategoryMeta[raw] || raw.startsWith(clientCategoryPrefix) || raw.startsWith("client-"))) return raw;
+  if (moduleId !== "clients" && (categoryMeta[raw] || raw === moduleId || raw.startsWith(moduleCategoryPrefix) || raw.startsWith(`module-${moduleId}-`))) return raw;
+  return moduleId === "clients"
+    ? `${clientCategoryPrefix}${state.client}:${slugifyLabel(raw)}`
+    : `${moduleCategoryPrefix}${moduleId}:${slugifyLabel(raw)}`;
 }
 
 function localizeMeta(meta, key) {
@@ -1753,16 +1892,20 @@ function getCardModule(card) {
   return moduleMeta[card?.module] ? card.module : "git";
 }
 
+function isCardInActiveClientScope(card) {
+  return getCardModule(card) === "clients" && getCardClient(card) === state.client;
+}
+
 function getCardClass(card) {
   return cardClassByCategory[card.category] || cardClassByCategory[getCardModule(card)] || "mercury-card";
 }
 
 function getCardCategoryLabel(card) {
-  if (getCardModule(card) === "clients") return localizeClientCategory(card.category);
+  if (isUncategorizedCard(card)) return "";
+  if (getCardModule(card) === "clients") return getClientCategoryLabel(card.category);
   const category = categoryMeta[card.category];
   if (category) return localizeMeta(category, "label");
-  const module = moduleMeta[getCardModule(card)];
-  return localizeMeta(module, "label") || card.category || "";
+  return getReadableCategoryName(card.category);
 }
 
 function getCardModuleLabel(card, module, t) {
@@ -1773,12 +1916,48 @@ function getCardModuleLabel(card, module, t) {
   return localizeMeta(module, "label") || t.git;
 }
 
+function isUncategorizedCard(card) {
+  const module = getCardModule(card);
+  return !clean(card?.category) || card.category === module || card.category === "all";
+}
+
 function getModuleFavoriteCount(moduleKey) {
   return getAllCards().filter((card) => isCardInCurrentModuleForCount(card, moduleKey) && favorites.has(card.id)).length;
 }
 
+function getQuickFilterOptions() {
+  if (state.module === "git") return moduleCategoryOptions;
+  if (state.module === "clients") {
+    const categories = getClientCategoryOptions(state.client);
+    return categories.length ? ["all", ...categories] : [];
+  }
+  const categories = getModuleCategoryOptions(state.module);
+  return categories.length ? ["all", ...categories] : [];
+}
+
+function getModuleCategoryOptions(moduleId) {
+  return uniqueStrings(getAllCards()
+    .filter((card) => getCardModule(card) === moduleId)
+    .map((card) => clean(card.category))
+    .filter((category) => category && category !== moduleId && category !== "all" && category !== newCategoryValue));
+}
+
+function getClientCategoryOptions(clientId = state.client) {
+  const categories = getAllCards()
+    .filter((card) => getCardModule(card) === "clients" && getCardClient(card) === clientId)
+    .map((card) => clean(card.category))
+    .filter((category) => category && category !== "clients" && category !== "all" && category !== newCategoryValue);
+  return uniqueStrings(categories);
+}
+
+function getClientCategoryOptionsForForm(editingCard = null) {
+  const targetClient = editingCard ? getCardClient(editingCard) || state.client : state.client;
+  const categories = getClientCategoryOptions(targetClient);
+  return ["clients", ...categories, newCategoryValue];
+}
+
 function isCardInCurrentModuleForCount(card, moduleKey) {
-  if (moduleKey === "clients") return getCardModule(card) === "clients" && getCardClient(card) === state.client;
+  if (moduleKey === "clients") return isCardInActiveClientScope(card);
   return getCardModule(card) === moduleKey;
 }
 
@@ -1793,8 +1972,8 @@ function getResultTitle(module, category, modeLabel, t) {
     const client = clientMeta[state.client] || clientMeta.wk;
     if (state.category === "all") return state.language === "zh" ? `${localizeMeta(client, "label")}资料` : `${localizeMeta(client, "label")} Notes`;
     return state.language === "zh"
-      ? `${localizeClientCategory(state.category)}卡片`
-      : `${localizeClientCategory(state.category)} Cards`;
+      ? `${getClientCategoryLabel(state.category)}卡片`
+      : `${getClientCategoryLabel(state.category)} Cards`;
   }
   return state.language === "zh"
     ? `${localizeMeta(module, "label")}卡片`
@@ -1807,83 +1986,105 @@ function renderCardCategoryOptions() {
 
   const editingCard = state.editingId ? getAllCards().find((card) => card.id === state.editingId) : null;
   const activeModule = editingCard ? getCardModule(editingCard) : state.module;
-  const options = activeModule === "git"
+  let options = activeModule === "git"
     ? moduleCategoryOptions.filter((key) => key !== "all")
     : activeModule === "clients"
-      ? clientCategoryOptions.filter((key) => key !== "all")
-      : [activeModule];
+      ? getClientCategoryOptionsForForm(editingCard)
+      : getModuleCategoryOptionsForForm(activeModule);
+  if (editingCard?.category && editingCard.category !== "all" && !options.includes(editingCard.category)) {
+    const insertIndex = Math.max(0, options.indexOf(newCategoryValue));
+    options = [
+      ...options.slice(0, insertIndex),
+      editingCard.category,
+      ...options.slice(insertIndex)
+    ];
+  }
   select.innerHTML = options.map((key) => {
+    if (key === newCategoryValue) {
+      return `<option value="${escapeAttr(newCategoryValue)}">${escapeHtml(getText().newCategory)}</option>`;
+    }
+    if (activeModule !== "git" && key === activeModule) {
+      return `<option value="${escapeAttr(key)}">${escapeHtml(getText().noCategory)}</option>`;
+    }
     const label = activeModule === "git"
       ? localizeMeta(categoryMeta[key], "label")
       : activeModule === "clients"
-        ? localizeClientCategory(key)
+        ? getClientCategoryLabel(key)
         : localizeMeta(categoryMeta[key], "label") || localizeMeta(moduleMeta[key], "label");
     return `<option value="${escapeAttr(key)}">${escapeHtml(label)}</option>`;
   }).join("");
+  syncCategoryInputUi();
+}
+
+function getModuleCategoryOptionsForForm(moduleId) {
+  return [moduleId, ...getModuleCategoryOptions(moduleId), newCategoryValue];
 }
 
 function renderQuickFilters() {
   if (!elements.quickFilters) return;
-  if (state.module !== "git" && state.module !== "clients") {
+  const options = getQuickFilterOptions();
+  if (options.length <= 1) {
     elements.quickFilters.innerHTML = "";
     elements.quickFilters.hidden = true;
     elements.quickFilters.setAttribute("aria-hidden", "true");
     return;
   }
-  const options = state.module === "clients" ? clientCategoryOptions : moduleCategoryOptions;
   elements.quickFilters.innerHTML = options.map((key) => {
     const label = state.module === "clients"
-      ? localizeClientCategory(key)
+      ? getClientCategoryLabel(key)
       : localizeMeta(categoryMeta[key] || categoryMeta.all, "label");
     return `<button type="button" data-filter="${escapeAttr(key)}">${escapeHtml(label)}</button>`;
   }).join("");
+  elements.quickFilters.hidden = false;
+  elements.quickFilters.setAttribute("aria-hidden", "false");
 }
 
-function renderClientControls() {
-  const host = document.querySelector(".focus-panel");
-  if (!host) return;
-  let controls = document.getElementById("clientControls");
-  host.classList.toggle("has-client-controls", state.module === "clients");
+function syncCategoryInputUi() {
+  const form = elements.cardForm;
+  if (!form?.elements.category || !form.elements.newCategory) return;
+  const t = getText();
+  const showNewCategory = form.elements.category.value === newCategoryValue;
+  form.elements.newCategory.hidden = !showNewCategory;
+  form.elements.newCategory.required = showNewCategory;
+  form.elements.newCategory.placeholder = t.newCategoryPlaceholder;
+  if (showNewCategory) form.elements.newCategory.focus();
+}
+
+function renderModuleScopes() {
+  if (!elements.moduleScopeBar) return;
   if (state.module !== "clients") {
-    controls?.remove();
-    elements.clientSelect = null;
+    elements.moduleScopeBar.hidden = true;
+    elements.moduleScopeBar.innerHTML = "";
     return;
   }
 
-  if (!controls) {
-    controls = document.createElement("div");
-    controls.className = "client-controls";
-    controls.id = "clientControls";
-  }
-  if (controls.parentElement !== host) {
-    host.appendChild(controls);
-  }
+  ensureValidClientScope();
+  const t = getText();
+  const scopes = getClientScopes();
+  const scopeButtons = scopes.map((scope) => `
+    <button class="scope-chip ${scope.id === state.client ? "active" : ""}" type="button" data-client-scope="${escapeAttr(scope.id)}">
+      ${escapeHtml(localizeMeta(scope, "label"))}
+    </button>
+  `).join("");
 
-  const options = Object.entries(clientMeta).map(([key, client]) =>
-    `<option value="${escapeAttr(key)}" ${state.client === key ? "selected" : ""}>${escapeHtml(localizeMeta(client, "label"))}</option>`
-  ).join("");
-  controls.innerHTML = `
-    <label for="clientSelect">${state.language === "zh" ? "客户" : "Client"}</label>
-    <select id="clientSelect">${options}</select>
+  elements.moduleScopeBar.innerHTML = `
+    <div class="scope-track" aria-label="${escapeAttr(state.language === "zh" ? "客户子模块" : "Client submodules")}">
+      ${scopeButtons}
+      <button class="scope-add-button" type="button" data-scope-action="add" aria-label="${escapeAttr(t.addScope)}">
+        <span aria-hidden="true">+</span>${escapeHtml(t.addScope)}
+      </button>
+    </div>
   `;
-  elements.clientSelect = controls.querySelector("#clientSelect");
-  elements.clientSelect?.addEventListener("change", (event) => {
-    state.client = clientMeta[event.target.value] ? event.target.value : "wk";
-    state.category = "all";
-    state.selectedId = null;
-    render();
-  });
+  elements.moduleScopeBar.hidden = false;
 }
 
 function filterCards(cards) {
   const query = state.search.toLowerCase();
   const filtered = cards.filter((card) => {
     const matchesModule = state.module === "clients"
-      ? getCardModule(card) === "clients" && getCardClient(card) === state.client
+      ? isCardInActiveClientScope(card)
       : getCardModule(card) === state.module;
-    const matchesCategory = state.module === "clients"
-      ? state.category === "all" || card.category === state.category
-      : state.module !== "git" || state.category === "all" || card.category === state.category;
+    const matchesCategory = state.category === "all" || card.category === state.category;
     const matchesFavorite = !state.favoritesOnly || favorites.has(card.id);
     const haystack = [
       card.title,
@@ -1929,7 +2130,7 @@ function syncCategoryUi() {
     button.classList.toggle("active", (button.dataset.module || "git") === state.module);
   });
   if (elements.quickFilters) {
-    const showFilters = state.module === "git" || state.module === "clients";
+    const showFilters = getQuickFilterOptions().length > 1;
     elements.quickFilters.hidden = !showFilters;
     elements.quickFilters.setAttribute("aria-hidden", String(!showFilters));
   }
@@ -1978,6 +2179,7 @@ function applyLanguage(language) {
 
   applyCardDialogText();
   applyModuleDialogText();
+  applyScopeDialogText();
   document.querySelector(".card-form button[value='cancel']").textContent = t.formClose;
   document.querySelectorAll("[data-i18n]").forEach((node) => {
     const key = node.dataset.i18n;
@@ -2002,6 +2204,15 @@ function applyModuleDialogText() {
   if (elements.moduleSubmitButton) elements.moduleSubmitButton.textContent = t.moduleSave;
   if (elements.moduleForm?.elements.name) {
     elements.moduleForm.elements.name.placeholder = state.language === "zh" ? "例如：AI 工具" : "Example: AI Tools";
+  }
+}
+
+function applyScopeDialogText() {
+  const t = getText();
+  if (elements.scopeDialogTitle) elements.scopeDialogTitle.textContent = state.editingScopeId ? t.scopeEditTitle : t.scopeAddTitle;
+  if (elements.scopeSubmitButton) elements.scopeSubmitButton.textContent = t.scopeSave;
+  if (elements.scopeForm?.elements.name) {
+    elements.scopeForm.elements.name.placeholder = state.language === "zh" ? "例如：某某客户" : "Example: Client A";
   }
 }
 
@@ -2165,6 +2376,7 @@ function getLocalPayload() {
     cardFrequency,
     customModules,
     moduleOrder,
+    customClientScopes,
     clientUpdatedAt: localStorage.getItem(storageKeys.localUpdatedAt) || new Date().toISOString(),
     savedAt: new Date().toISOString()
   };
@@ -2176,6 +2388,7 @@ function mergeCloudPayload(cloudPayload, localPayload, options = {}) {
   const primaryCards = preferLocal ? localPayload : cloudPayload;
   const secondaryCards = preferLocal ? cloudPayload : localPayload;
   const mergedCustomModules = normalizeCustomModules(preferenceSource.customModules || localPayload.customModules || []);
+  const mergedClientScopes = normalizeCustomClientScopes(preferenceSource.customClientScopes || localPayload.customClientScopes || []);
   const deletedCards = normalizeStringArray([
     ...normalizeStringArray(cloudPayload.deletedCards),
     ...normalizeStringArray(localPayload.deletedCards)
@@ -2193,6 +2406,7 @@ function mergeCloudPayload(cloudPayload, localPayload, options = {}) {
     cardFrequency: mergeFrequency(cloudPayload.cardFrequency || {}, localPayload.cardFrequency || {}),
     customModules: mergedCustomModules,
     moduleOrder: normalizeModuleOrderFor(preferenceSource.moduleOrder || localPayload.moduleOrder, mergedCustomModules),
+    customClientScopes: mergedClientScopes,
     clientUpdatedAt: preferLocal ? localPayload.clientUpdatedAt : cloudPayload.clientUpdatedAt || localPayload.clientUpdatedAt,
     savedAt: new Date().toISOString()
   };
@@ -2209,7 +2423,10 @@ function applyCloudPayload(payload) {
   cardFrequency = payload.cardFrequency && typeof payload.cardFrequency === "object" ? payload.cardFrequency : {};
   customModules = normalizeCustomModules(payload.customModules || []);
   moduleOrder = normalizeModuleOrder(payload.moduleOrder || moduleOrder);
+  customClientScopes = normalizeCustomClientScopes(payload.customClientScopes || []);
+  clientMeta = buildClientMeta();
   if (!moduleMeta[state.module]) state.module = "git";
+  ensureValidClientScope();
   state.language = payload.language === "en" ? "en" : "zh";
   state.category = "all";
 
@@ -2221,6 +2438,7 @@ function applyCloudPayload(payload) {
   writeJson(storageKeys.cardFrequency, cardFrequency);
   writeJson(storageKeys.customModules, customModules);
   writeJson(storageKeys.moduleOrder, moduleOrder);
+  writeJson(storageKeys.customClientScopes, customClientScopes);
   localStorage.setItem(storageKeys.language, state.language);
   if (payload.clientUpdatedAt) localStorage.setItem(storageKeys.localUpdatedAt, payload.clientUpdatedAt);
   if (payload.theme === "light" || payload.theme === "dark") {
@@ -2251,8 +2469,26 @@ function normalizeCustomModules(modules) {
   return Array.from(byId.values());
 }
 
+function normalizeCustomClientScopes(scopes) {
+  const byId = new Map();
+  (Array.isArray(scopes) ? scopes : []).forEach((scope) => {
+    if (isValidClientScope(scope) && !builtInClientMeta[scope.id]) byId.set(scope.id, normalizeClientScope(scope));
+  });
+  return Array.from(byId.values());
+}
+
 function normalizeStringArray(value) {
   return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+}
+
+function uniqueStrings(values) {
+  const seen = new Set();
+  return values.filter((value) => {
+    const next = clean(value);
+    if (!next || seen.has(next)) return false;
+    seen.add(next);
+    return true;
+  });
 }
 
 function mergeFrequency(primaryFrequency, secondaryFrequency) {
@@ -2364,6 +2600,162 @@ function persistCustomModules() {
   writeJson(storageKeys.moduleOrder, moduleOrder);
   touchLocalState();
   scheduleCloudSync({ preferLocal: true });
+}
+
+function persistClientScopes() {
+  customClientScopes = normalizeCustomClientScopes(customClientScopes);
+  clientMeta = buildClientMeta();
+  writeJson(storageKeys.customClientScopes, customClientScopes);
+  touchLocalState();
+  scheduleCloudSync({ preferLocal: true });
+}
+
+function getClientScopes() {
+  return Object.entries(clientMeta).map(([id, meta]) => ({ id, ...meta }));
+}
+
+function ensureValidClientScope() {
+  clientMeta = buildClientMeta();
+  if (!clientMeta[state.client]) state.client = defaultClientScope;
+}
+
+function openScopeDialog(scopeId = null) {
+  const t = getText();
+  const scope = scopeId ? customClientScopes.find((item) => item.id === scopeId) : null;
+  state.editingScopeId = scope?.id || null;
+  elements.scopeForm?.reset();
+  if (elements.scopeForm?.elements.name) {
+    elements.scopeForm.elements.name.value = scope?.label || "";
+    elements.scopeForm.elements.name.placeholder = state.language === "zh" ? "例如：某某客户" : "Example: Client A";
+  }
+  if (elements.scopeDialogEyebrow) elements.scopeDialogEyebrow.textContent = scope ? "Submodule / Rename" : "Submodule / New";
+  if (elements.scopeDialogTitle) elements.scopeDialogTitle.textContent = scope ? t.scopeEditTitle : t.scopeAddTitle;
+  if (elements.scopeSubmitButton) elements.scopeSubmitButton.textContent = t.scopeSave;
+  elements.scopeDialog?.showModal();
+  elements.scopeForm?.elements.name?.focus();
+}
+
+function resetScopeDialog() {
+  state.editingScopeId = null;
+  elements.scopeForm?.reset();
+}
+
+function saveScopeForm(formData) {
+  const t = getText();
+  const name = clean(formData.get("name"));
+  if (!name) {
+    showToast(t.scopeNameRequired);
+    return;
+  }
+
+  if (state.editingScopeId && isCustomClientScope(state.editingScopeId)) {
+    renameClientScope(state.editingScopeId, name);
+    elements.scopeDialog?.close("saved");
+    resetScopeDialog();
+    return;
+  }
+
+  addClientScope(name);
+  elements.scopeDialog?.close("saved");
+  resetScopeDialog();
+}
+
+function addClientScope(name) {
+  const scope = createClientScope(name);
+  customClientScopes = [...customClientScopes, scope];
+  state.client = scope.id;
+  state.category = "all";
+  state.selectedId = null;
+  state.favoritesOnly = false;
+  persistClientScopes();
+  render();
+  scrollMainTop();
+  showToast(getText().scopeCreated);
+}
+
+function renameClientScope(scopeId, nextName) {
+  if (!isCustomClientScope(scopeId)) return;
+  customClientScopes = customClientScopes.map((scope) => (
+    scope.id === scopeId ? normalizeClientScope({ ...scope, label: nextName, labelEn: nextName, title: `${nextName}资料`, titleEn: `${nextName} Notes` }) : scope
+  ));
+  persistClientScopes();
+  render();
+  showToast(getText().scopeRenamed);
+}
+
+function handleDeleteScopeMenu(button, scopeId) {
+  const t = getText();
+  if (!isCustomClientScope(scopeId)) {
+    showToast(t.coreScopeLocked);
+    closeScopeMenu();
+    return;
+  }
+  if (button.dataset.confirm !== "true") {
+    button.dataset.confirm = "true";
+    button.textContent = t.scopeDeleteHint;
+    button.classList.add("is-confirming");
+    clearTimeout(handleDeleteScopeMenu.timer);
+    handleDeleteScopeMenu.timer = setTimeout(() => {
+      button.dataset.confirm = "false";
+      button.textContent = t.deleteScope;
+      button.classList.remove("is-confirming");
+    }, 2200);
+    showToast(t.scopeDeleteHint);
+    return;
+  }
+  deleteClientScope(scopeId);
+  closeScopeMenu();
+}
+
+function deleteClientScope(scopeId) {
+  if (!isCustomClientScope(scopeId)) return;
+  const t = getText();
+  const scopeCards = customCards.filter((card) => card.module === "clients" && card.client === scopeId).map((card) => card.id);
+  customCards = customCards.filter((card) => !(card.module === "clients" && card.client === scopeId));
+  editedCards = editedCards.filter((card) => !(card.module === "clients" && card.client === scopeId));
+  scopeCards.forEach((id) => {
+    favorites.delete(id);
+    recentCards = recentCards.filter((cardId) => cardId !== id);
+    delete cardFrequency[id];
+  });
+  customClientScopes = customClientScopes.filter((scope) => scope.id !== scopeId);
+  if (state.client === scopeId) {
+    state.client = defaultClientScope;
+    state.category = "all";
+    state.selectedId = null;
+  }
+  writeJson(storageKeys.customCards, customCards);
+  writeJson(storageKeys.editedCards, editedCards);
+  writeJson(storageKeys.favorites, Array.from(favorites));
+  writeJson(storageKeys.recentCards, recentCards);
+  writeJson(storageKeys.cardFrequency, cardFrequency);
+  persistClientScopes();
+  render();
+  showToast(t.scopeDeleted);
+}
+
+function openScopeMenu(scopeId, x, y) {
+  if (!elements.scopeMenu || !clientMeta[scopeId]) return;
+  const t = getText();
+  state.scopeMenuTarget = scopeId;
+  const canDelete = isCustomClientScope(scopeId);
+  elements.scopeMenu.innerHTML = canDelete
+    ? `
+      <button type="button" data-scope-menu-action="rename">${escapeHtml(t.renameScope)}</button>
+      <button class="danger" type="button" data-scope-menu-action="delete">${escapeHtml(t.deleteScope)}</button>
+    `
+    : `<span class="module-menu-note">${escapeHtml(t.coreScopeLocked)}</span>`;
+  elements.scopeMenu.hidden = false;
+  const rect = elements.scopeMenu.getBoundingClientRect();
+  const left = Math.min(x, window.innerWidth - rect.width - 12);
+  const top = Math.min(y, window.innerHeight - rect.height - 12);
+  elements.scopeMenu.style.left = `${Math.max(12, left)}px`;
+  elements.scopeMenu.style.top = `${Math.max(12, top)}px`;
+}
+
+function closeScopeMenu() {
+  state.scopeMenuTarget = null;
+  if (elements.scopeMenu) elements.scopeMenu.hidden = true;
 }
 
 function openModuleDialog(moduleId = null) {
@@ -2621,7 +3013,7 @@ function openCardDialog(card = null) {
   if (!card && form.elements.category.options.length) {
     form.elements.category.value = state.module === "git"
       ? (state.category !== "all" ? state.category : "daily")
-      : form.elements.category.options[0].value;
+      : (state.category !== "all" ? state.category : form.elements.category.options[0].value);
   }
 
   const eyebrow = form.querySelector(".eyebrow");
@@ -2903,13 +3295,14 @@ function getCardInput(formData, baseCard = null) {
 
   const activeModule = baseCard
     ? getCardModule(baseCard)
-    : moduleMeta[state.module] && state.module !== "clients" ? state.module : "git";
+    : moduleMeta[state.module] ? state.module : "git";
   const rawCategory = clean(formData.get("category"));
+  const rawNewCategory = clean(formData.get("newCategory"));
   const category = activeModule === "git"
     ? (categoryMeta[rawCategory] && rawCategory !== "all" ? rawCategory : "daily")
     : activeModule === "clients"
-      ? (clientCategoryMeta[rawCategory] && rawCategory !== "all" ? rawCategory : baseCard?.category || "wk-flow")
-      : activeModule;
+      ? normalizeCardCategory(rawCategory === newCategoryValue ? rawNewCategory : rawCategory, activeModule, baseCard?.category || "")
+      : normalizeCardCategory(rawCategory === newCategoryValue ? rawNewCategory : rawCategory, activeModule, baseCard?.category || "");
   const tags = clean(formData.get("tags"))
     .split(/[,\uFF0C]/)
     .map((tag) => tag.trim())
@@ -2917,6 +3310,7 @@ function getCardInput(formData, baseCard = null) {
 
   return {
     activeModule,
+    client: activeModule === "clients" ? (baseCard ? getCardClient(baseCard) || state.client : state.client) : undefined,
     category,
     title,
     command,
@@ -2935,6 +3329,7 @@ function saveCustomCard(formData) {
   const card = {
     id: `custom-${Date.now()}`,
     module: input.activeModule,
+    client: input.client,
     title: input.title,
     category: input.category,
     risk: "Safe",
@@ -2977,7 +3372,7 @@ function updateCard(id, formData) {
   const patch = {
     id,
     module: getCardModule(currentCard),
-    client: getCardClient(currentCard) || undefined,
+    client: input.client || getCardClient(currentCard) || undefined,
     title: input.title,
     category: input.category,
     risk: currentCard.risk || "Safe",
@@ -3299,6 +3694,10 @@ function isValidCustomModule(module) {
   return Boolean(module && typeof module.id === "string" && module.id.startsWith("module-") && typeof module.label === "string" && module.label.trim());
 }
 
+function isValidClientScope(scope) {
+  return Boolean(scope && typeof scope.id === "string" && (scope.id === defaultClientScope || scope.id.startsWith("client-")) && typeof scope.label === "string" && scope.label.trim());
+}
+
 function normalizeCustomModule(module) {
   const label = clean(module.label);
   return {
@@ -3318,6 +3717,31 @@ function normalizeCustomModule(module) {
   };
 }
 
+function buildClientMeta() {
+  const customMeta = Object.fromEntries(customClientScopes.map((scope) => [scope.id, normalizeClientScope(scope)]));
+  return { ...builtInClientMeta, ...customMeta };
+}
+
+function normalizeClientScope(scope) {
+  const label = clean(scope.label);
+  return {
+    id: clean(scope.id),
+    label,
+    labelEn: clean(scope.labelEn) || label,
+    title: clean(scope.title) || `${label}资料`,
+    titleEn: clean(scope.titleEn) || `${clean(scope.labelEn) || label} Notes`
+  };
+}
+
+function createClientScope(label) {
+  const id = `client-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  return normalizeClientScope({ id, label });
+}
+
+function isCustomClientScope(scopeId) {
+  return customClientScopes.some((scope) => scope.id === scopeId);
+}
+
 function createCustomModule(label) {
   const id = `module-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   return normalizeCustomModule({ id, label });
@@ -3325,6 +3749,15 @@ function createCustomModule(label) {
 
 function isCustomModule(moduleId) {
   return customModules.some((module) => module.id === moduleId);
+}
+
+function slugifyLabel(value) {
+  return clean(value)
+    .toLowerCase()
+    .replace(/[:]+/g, "-")
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32) || `category-${Date.now()}`;
 }
 
 function escapeHtml(value) {
