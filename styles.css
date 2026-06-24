@@ -40,6 +40,8 @@ body.theme-light {
   --soft: #294e6c;
   --muted: #5f7d93;
   --code: #eafffb;
+  --code-light: #17394f;
+  --code-light-soft: #244f68;
   --accent: #149ec6;
   --accent-2: #f2b84b;
   --accent-3: #ef6f77;
@@ -1160,6 +1162,11 @@ code {
   padding: 8px 10px;
 }
 
+.card-section-block .section-plain code {
+  font-size: 13px;
+  line-height: 1.65;
+}
+
 .section-lines {
   display: none;
   overflow: hidden;
@@ -1269,24 +1276,49 @@ body.theme-light .snippet-block .command-block {
 }
 
 body.theme-light .command-block-plain {
-  border-color: rgba(58, 143, 186, 0.14);
-  background: rgba(239, 248, 252, 0.94);
+  border-color: rgba(52, 135, 176, 0.18);
+  background:
+    linear-gradient(180deg, rgba(248, 254, 255, 0.92), rgba(232, 247, 252, 0.86)),
+    rgba(239, 248, 252, 0.94);
 }
 
 body.theme-light .command-block-plain code {
-  color: #12344a;
+  color: var(--code-light);
 }
 
 body.theme-light .card-section-block {
-  border-color: rgba(58, 143, 186, 0.16);
+  border-color: rgba(45, 132, 174, 0.18);
   background:
-    linear-gradient(180deg, rgba(250, 255, 255, 0.76), rgba(226, 244, 252, 0.5)),
-    rgba(245, 252, 255, 0.82);
+    linear-gradient(180deg, rgba(251, 255, 255, 0.9), rgba(232, 248, 253, 0.72)),
+    rgba(246, 253, 255, 0.88);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+}
+
+body.theme-light .card-section-head strong {
+  color: #102b40;
+}
+
+body.theme-light .section-copy-button,
+body.theme-light .section-toggle-button {
+  border-color: rgba(52, 147, 190, 0.24);
+  background: rgba(239, 250, 255, 0.72);
+  color: #1a5876;
 }
 
 body.theme-light .section-lines {
-  border-color: rgba(58, 143, 186, 0.14);
-  background: rgba(239, 248, 252, 0.94);
+  border-color: rgba(52, 135, 176, 0.18);
+  background:
+    linear-gradient(180deg, rgba(248, 254, 255, 0.92), rgba(232, 247, 252, 0.86)),
+    rgba(239, 248, 252, 0.94);
+}
+
+body.theme-light .card-section-block .section-plain code {
+  color: var(--code-light);
+}
+
+body.theme-light .card-section-block.is-expanded .copy-line-button {
+  background: rgba(240, 251, 255, 0.92);
+  color: #17617e;
 }
 
 .command-line {
@@ -1356,6 +1388,10 @@ body.theme-light .section-lines {
 
 body.theme-light .command-line {
   border-bottom-color: rgba(75, 183, 215, 0.1);
+}
+
+body.theme-light .section-lines .command-line .line-text {
+  color: var(--code-light);
 }
 
 body.theme-light .command-line:hover {

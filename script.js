@@ -1466,9 +1466,9 @@ function renderCards(cards) {
     const categoryLabel = getCardCategoryLabel(card);
     const moduleLabel = getCardModuleLabel(card, module, t);
     const title = localizeCard(card, "title");
-    const scenario = localizeCard(card, "scenario");
+    const scenario = getDisplayScenario(card);
     const titleHtml = state.search ? highlightText(title, state.search) : escapeHtml(title);
-    const noteHtml = state.search ? highlightText(scenario, state.search) : escapeHtml(scenario);
+    const noteHtml = scenario ? (state.search ? highlightText(scenario, state.search) : escapeHtml(scenario)) : "";
     const snippetHtml = card.layout === "config"
       ? renderConfigSnippets(card, t)
       : renderCommandBlock(card, t);
@@ -1483,7 +1483,7 @@ function renderCards(cards) {
           </div>
         </header>
         <div class="card-body">
-          <p class="card-note">${noteHtml}</p>
+          ${noteHtml ? `<p class="card-note">${noteHtml}</p>` : ""}
           ${snippetHtml}
         </div>
         <footer class="card-meta">
@@ -1604,20 +1604,21 @@ function renderDetail(card) {
   const categoryLabel = getCardCategoryLabel(card);
   const title = localizeCard(card, "title");
   const note = localizeCard(card, "note");
-  const scenario = localizeCard(card, "scenario");
+  const scenario = getDisplayScenario(card);
+  const detailText = note || scenario;
 
   const detailContent = elements.detailPanel?.querySelector(".detail-content");
   if (detailContent) {
     detailContent.innerHTML = `
       <h3>${escapeHtml(title)}</h3>
-      <p>${escapeHtml(note || scenario)}</p>
+      ${detailText ? `<p>${escapeHtml(detailText)}</p>` : ""}
       <div class="detail-summary">
         <div><span>${escapeHtml(t.category)}</span><strong>${escapeHtml(categoryLabel)}</strong></div>
       </div>
-      <div class="detail-note">
+      ${scenario ? `<div class="detail-note">
         <span>${escapeHtml(t.scenario)}</span>
         <strong>${escapeHtml(scenario)}</strong>
-      </div>
+      </div>` : ""}
       <button class="copy-button copy-all-button" type="button" data-action="copy" data-command="${escapeAttr(card.command)}">${escapeHtml(card.layout === "config" ? t.copyConfig : t.copyGroup)}</button>
     `;
   }
@@ -1656,6 +1657,12 @@ function localizeCard(card, key) {
   if (card.edited) return card[key] || card[`${key}En`] || "";
   if (state.language === "en" && !card.custom) return card[`${key}En`] || card[key] || "";
   return card[key] || "";
+}
+
+function getDisplayScenario(card) {
+  const scenario = clean(localizeCard(card, "scenario"));
+  const fallbackLabels = [uiText.zh.customScenario, uiText.en.customScenario].map((label) => label.toLowerCase());
+  return fallbackLabels.includes(scenario.toLowerCase()) ? "" : scenario;
 }
 
 function getCardModule(card) {
@@ -2543,7 +2550,7 @@ function openCardDialog(card = null) {
   if (card) {
     form.elements.title.value = card.title || "";
     form.elements.category.value = card.category || form.elements.category.value;
-    form.elements.scenario.value = card.scenario || "";
+    form.elements.scenario.value = getDisplayScenario(card);
     form.elements.command.value = getEditableCommand(card);
     form.elements.note.value = card.note || "";
     form.elements.tags.value = Array.isArray(card.tags) ? card.tags.join(", ") : "";
@@ -2829,7 +2836,7 @@ function getCardInput(formData, baseCard = null) {
     category,
     title,
     command,
-    scenario: clean(formData.get("scenario")) || t.customScenario,
+    scenario: clean(formData.get("scenario")),
     note: clean(formData.get("note")),
     tags: tags.length ? tags : ["custom"],
     snippets,
