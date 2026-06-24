@@ -1044,6 +1044,33 @@ body.theme-light .command-card {
 
 }
 
+.command-card header {
+  position: relative;
+  padding-right: 38px;
+}
+
+.card-zoom-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 31px;
+  min-width: 31px;
+  height: 31px;
+  min-height: 31px;
+  padding: 0;
+  border-color: color-mix(in srgb, var(--card-color) 22%, var(--line));
+  background: rgba(255, 255, 255, 0.035);
+  color: color-mix(in srgb, var(--card-color) 70%, var(--muted));
+  opacity: 0.72;
+}
+
+.card-zoom-button:hover,
+.card-zoom-button:focus-visible {
+  border-color: color-mix(in srgb, var(--card-color) 42%, var(--line));
+  background: color-mix(in srgb, var(--card-color) 12%, rgba(255, 255, 255, 0.04));
+  opacity: 1;
+}
+
 .tag,
 .section-count,
 .panel-head > span,
@@ -1141,6 +1168,12 @@ code {
   color: var(--text);
   font-size: 13px;
   line-height: 1.35;
+}
+
+.command-lines-head strong {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
 }
 
 .card-section-actions {
@@ -1908,6 +1941,58 @@ body.theme-light .card-dialog {
 
 .card-dialog::backdrop {
   background: rgba(3, 8, 18, 0.54);
+}
+
+.card-zoom-dialog {
+  width: min(980px, calc(100vw - 44px));
+  max-height: min(82vh, 860px);
+}
+
+.zoom-card-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  max-height: min(82vh, 860px);
+}
+
+.zoom-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  padding: 18px 20px 14px;
+}
+
+.zoom-card-head h3 {
+  margin: 4px 0 0;
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.zoom-card-body {
+  display: grid;
+  gap: 14px;
+  overflow: auto;
+  padding: 18px 20px 20px;
+}
+
+.zoom-card-body .command-line .line-text {
+  white-space: pre-wrap;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+
+.zoom-card-scenario,
+.zoom-card-note {
+  margin: 0;
+  color: var(--soft);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.zoom-card-note {
+  color: var(--muted);
 }
 
 .card-form {

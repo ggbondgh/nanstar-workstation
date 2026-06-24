@@ -138,7 +138,8 @@ const uiText = {
     copySnippet: "复制整段",
     copySection: "复制本段",
     toggleLines: "逐行",
-    collapseLines: "收起",
+    mergeLines: "合并",
+    zoomCard: "放大卡片",
     copyConfig: "复制 config.toml",
     copyLine: "复制此行",
     editAction: "编辑",
@@ -264,7 +265,8 @@ const uiText = {
     copySnippet: "Copy Block",
     copySection: "Copy Section",
     toggleLines: "Lines",
-    collapseLines: "Collapse",
+    mergeLines: "Merge",
+    zoomCard: "Open larger card",
     copyConfig: "Copy config.toml",
     copyLine: "Copy this line",
     editAction: "Edit",
@@ -1022,6 +1024,11 @@ const elements = {
   solarSystemLarge: document.getElementById("solarSystemLarge"),
   celestialInfo: document.getElementById("celestialInfo"),
   detailContent: document.getElementById("detailContent"),
+  cardZoomDialog: document.getElementById("cardZoomDialog"),
+  cardZoomClose: document.getElementById("cardZoomClose"),
+  cardZoomEyebrow: document.getElementById("cardZoomEyebrow"),
+  cardZoomTitle: document.getElementById("cardZoomTitle"),
+  cardZoomBody: document.getElementById("cardZoomBody"),
   sectionEditor: document.getElementById("sectionEditor"),
   sectionEditorList: document.getElementById("sectionEditorList"),
   addSectionButton: document.getElementById("addSectionButton")
@@ -1289,6 +1296,7 @@ function bindEvents() {
     const copyLineButton = event.target.closest("[data-action='copy-line']");
     const toggleSectionButton = event.target.closest("[data-action='toggle-section-lines']");
     const copyButton = event.target.closest("[data-action='copy']");
+    const zoomButton = event.target.closest("[data-action='zoom']");
     const favoriteButton = event.target.closest("[data-action='favorite']");
     const editButton = event.target.closest("[data-action='edit']");
     const deleteButton = event.target.closest("[data-action='delete']");
@@ -1307,7 +1315,7 @@ function bindEvents() {
       event.stopPropagation();
       const block = toggleSectionButton.closest(".card-section-block");
       const expanded = block?.classList.toggle("is-expanded");
-      toggleSectionButton.textContent = expanded ? getText().collapseLines : getText().toggleLines;
+      toggleSectionButton.textContent = expanded ? getText().mergeLines : getText().toggleLines;
       toggleSectionButton.setAttribute("aria-expanded", String(Boolean(expanded)));
       return;
     }
@@ -1317,6 +1325,12 @@ function bindEvents() {
       const cardId = copyButton.dataset.id;
       const copied = await copyText(copyButton.dataset.command || "");
       if (copied && cardId) recordCardUsage(cardId);
+      return;
+    }
+
+    if (zoomButton) {
+      event.stopPropagation();
+      openCardZoom(zoomButton.dataset.id || "");
       return;
     }
 
@@ -1355,6 +1369,38 @@ function bindEvents() {
       event.stopPropagation();
       const copied = await copyText(copyButton.dataset.command || "");
       if (copied && state.selectedId) recordCardUsage(state.selectedId);
+    }
+  });
+
+  elements.cardZoomClose?.addEventListener("click", () => {
+    elements.cardZoomDialog?.close("closed");
+  });
+
+  elements.cardZoomDialog?.addEventListener("click", async (event) => {
+    const copyLineButton = event.target.closest("[data-action='copy-line']");
+    const toggleSectionButton = event.target.closest("[data-action='toggle-section-lines']");
+    const copyButton = event.target.closest("[data-action='copy']");
+
+    if (copyLineButton) {
+      event.stopPropagation();
+      const copied = await copyText(copyLineButton.dataset.command || "");
+      if (copied) recordCardUsage(copyLineButton.dataset.id || state.selectedId || "");
+      return;
+    }
+
+    if (toggleSectionButton) {
+      event.stopPropagation();
+      const block = toggleSectionButton.closest(".card-section-block");
+      const expanded = block?.classList.toggle("is-expanded");
+      toggleSectionButton.textContent = expanded ? getText().mergeLines : getText().toggleLines;
+      toggleSectionButton.setAttribute("aria-expanded", String(Boolean(expanded)));
+      return;
+    }
+
+    if (copyButton) {
+      event.stopPropagation();
+      const copied = await copyText(copyButton.dataset.command || "");
+      if (copied) recordCardUsage(copyButton.dataset.id || state.selectedId || "");
     }
   });
 
@@ -1481,6 +1527,9 @@ function renderCards(cards) {
             <span class="card-type">${escapeHtml(categoryLabel)} / ${card.custom ? t.custom : moduleLabel}</span>
             <h4>${titleHtml}</h4>
           </div>
+          <button class="card-zoom-button icon-button" type="button" data-action="zoom" data-id="${escapeAttr(card.id)}" aria-label="${escapeAttr(t.zoomCard)}" title="${escapeAttr(t.zoomCard)}">
+            <span class="expand-icon" aria-hidden="true"></span>
+          </button>
         </header>
         <div class="card-body">
           ${noteHtml ? `<p class="card-note">${noteHtml}</p>` : ""}
@@ -1511,8 +1560,20 @@ function renderCommandBlock(card, t) {
 
   const commandLines = String(card.command || "").split("\n");
   const commandHtml = commandLines.map((line) =>
-    `<div class="command-line"><span class="line-text">${escapeHtml(line)}</span><button class="copy-line-button" type="button" data-action="copy-line" data-command="${escapeAttr(line)}" title="${escapeAttr(t.copyLine)}">${escapeHtml(t.copy)}</button></div>`
+    `<div class="command-line"><span class="line-text">${escapeHtml(line)}</span><button class="copy-line-button" type="button" data-action="copy-line" data-id="${escapeAttr(card.id)}" data-command="${escapeAttr(line)}" title="${escapeAttr(t.copyLine)}">${escapeHtml(t.copy)}</button></div>`
   ).join("");
+  if (commandLines.length > 1) {
+    return `
+      <section class="card-section-block command-lines-block is-expanded">
+        <div class="card-section-head command-lines-head">
+          <strong>${escapeHtml(t.formCommand)}</strong>
+          <button class="copy-button section-toggle-button" type="button" data-action="toggle-section-lines" aria-expanded="true">${escapeHtml(t.mergeLines)}</button>
+        </div>
+        <pre class="command-block command-block-plain section-plain"><code>${escapeHtml(card.command || "")}</code></pre>
+        <pre class="command-block section-lines">${commandHtml}</pre>
+      </section>
+    `;
+  }
   return `<pre class="command-block">${commandHtml}</pre>`;
 }
 
@@ -1534,7 +1595,7 @@ function renderCardSection(card, section, index, t) {
   const content = String(section.content || "");
   const lines = content.split("\n").filter((line) => line.trim());
   const lineHtml = lines.map((line) =>
-    `<div class="command-line"><span class="line-text">${escapeHtml(line)}</span><button class="copy-line-button" type="button" data-action="copy-line" data-command="${escapeAttr(line)}" title="${escapeAttr(t.copyLine)}">${escapeHtml(t.copy)}</button></div>`
+    `<div class="command-line"><span class="line-text">${escapeHtml(line)}</span><button class="copy-line-button" type="button" data-action="copy-line" data-id="${escapeAttr(card.id)}" data-command="${escapeAttr(line)}" title="${escapeAttr(t.copyLine)}">${escapeHtml(t.copy)}</button></div>`
   ).join("");
   return `
     <section class="card-section-block">
@@ -1622,6 +1683,31 @@ function renderDetail(card) {
       <button class="copy-button copy-all-button" type="button" data-action="copy" data-command="${escapeAttr(card.command)}">${escapeHtml(card.layout === "config" ? t.copyConfig : t.copyGroup)}</button>
     `;
   }
+}
+
+function openCardZoom(id) {
+  const card = getAllCards().find((item) => item.id === id);
+  if (!card || !elements.cardZoomDialog || !elements.cardZoomBody) return;
+  const t = getText();
+  const categoryLabel = getCardCategoryLabel(card);
+  const title = localizeCard(card, "title");
+  const scenario = getDisplayScenario(card);
+  const note = localizeCard(card, "note");
+  const contentHtml = card.layout === "config"
+    ? renderConfigSnippets(card, t)
+    : renderCommandBlock(card, t);
+
+  state.selectedId = id;
+  if (elements.cardZoomEyebrow) elements.cardZoomEyebrow.textContent = categoryLabel;
+  if (elements.cardZoomTitle) elements.cardZoomTitle.textContent = title;
+  if (elements.cardZoomClose) elements.cardZoomClose.textContent = t.formClose;
+  elements.cardZoomBody.innerHTML = `
+    ${scenario ? `<p class="zoom-card-scenario">${escapeHtml(scenario)}</p>` : ""}
+    ${contentHtml}
+    ${note ? `<p class="zoom-card-note">${escapeHtml(note)}</p>` : ""}
+    <button class="copy-button copy-all-button" type="button" data-action="copy" data-id="${escapeAttr(card.id)}" data-command="${escapeAttr(card.command)}">${escapeHtml(card.layout === "config" ? t.copyConfig : t.copyGroup)}</button>
+  `;
+  elements.cardZoomDialog.showModal();
 }
 
 function getAllCards() {
