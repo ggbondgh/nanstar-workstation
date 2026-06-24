@@ -1063,6 +1063,10 @@ const elements = {
   syncNow: document.getElementById("syncNow"),
   cardDialog: document.getElementById("cardDialog"),
   cardForm: document.getElementById("cardForm"),
+  categoryPicker: document.getElementById("categoryPicker"),
+  categoryPickerButton: document.getElementById("categoryPickerButton"),
+  categoryPickerText: document.getElementById("categoryPickerText"),
+  categoryPickerMenu: document.getElementById("categoryPickerMenu"),
   solarExpand: document.getElementById("solarExpand"),
   solarClose: document.getElementById("solarClose"),
   solarOverlay: document.getElementById("solarOverlay"),
@@ -1326,6 +1330,7 @@ function bindEvents() {
     if (event.key === "Escape") {
       closeModuleMenu();
       closeScopeMenu();
+      closeCategoryPicker();
     }
   });
 
@@ -1369,6 +1374,24 @@ function bindEvents() {
 
   elements.cardForm?.elements.category?.addEventListener("change", () => {
     syncCategoryInputUi();
+  });
+
+  elements.categoryPickerButton?.addEventListener("click", () => {
+    toggleCategoryPicker();
+  });
+
+  elements.categoryPickerMenu?.addEventListener("click", (event) => {
+    const option = event.target.closest("[data-category-value]");
+    if (!option || !elements.cardForm?.elements.category) return;
+    elements.cardForm.elements.category.value = option.dataset.categoryValue || "";
+    elements.cardForm.elements.category.dispatchEvent(new Event("change", { bubbles: true }));
+    closeCategoryPicker();
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!elements.categoryPicker || elements.categoryPickerMenu?.hidden) return;
+    if (event.target.closest("#categoryPicker")) return;
+    closeCategoryPicker();
   });
 
   elements.addSectionButton?.addEventListener("click", () => {
@@ -2022,6 +2045,7 @@ function renderCardCategoryOptions() {
         : localizeMeta(categoryMeta[key], "label") || localizeMeta(moduleMeta[key], "label");
     return `<option value="${escapeAttr(key)}">${escapeHtml(label)}</option>`;
   }).join("");
+  renderCategoryPicker();
   syncCategoryInputUi();
 }
 
@@ -2056,7 +2080,38 @@ function syncCategoryInputUi() {
   form.elements.newCategory.hidden = !showNewCategory;
   form.elements.newCategory.required = showNewCategory;
   form.elements.newCategory.placeholder = t.newCategoryPlaceholder;
+  renderCategoryPicker();
   if (showNewCategory) form.elements.newCategory.focus();
+}
+
+function renderCategoryPicker() {
+  const select = elements.cardForm?.elements.category;
+  if (!select || !elements.categoryPickerButton || !elements.categoryPickerMenu || !elements.categoryPickerText) return;
+  const selectedOption = select.options[select.selectedIndex] || select.options[0];
+  elements.categoryPickerText.textContent = selectedOption?.textContent || getText().noCategory;
+  elements.categoryPickerMenu.innerHTML = Array.from(select.options).map((option) => {
+    const selected = option.value === select.value;
+    return `
+      <button class="category-picker-option ${selected ? "active" : ""}" type="button" role="option" aria-selected="${selected}" data-category-value="${escapeAttr(option.value)}">
+        <span>${escapeHtml(option.textContent)}</span>
+      </button>
+    `;
+  }).join("");
+}
+
+function toggleCategoryPicker() {
+  if (!elements.categoryPickerMenu || !elements.categoryPickerButton) return;
+  const nextOpen = elements.categoryPickerMenu.hidden;
+  elements.categoryPickerMenu.hidden = !nextOpen;
+  elements.categoryPickerButton.setAttribute("aria-expanded", String(nextOpen));
+  elements.categoryPicker?.classList.toggle("is-open", nextOpen);
+}
+
+function closeCategoryPicker() {
+  if (!elements.categoryPickerMenu || !elements.categoryPickerButton) return;
+  elements.categoryPickerMenu.hidden = true;
+  elements.categoryPickerButton.setAttribute("aria-expanded", "false");
+  elements.categoryPicker?.classList.remove("is-open");
 }
 
 function renderModuleScopes() {
@@ -3069,6 +3124,8 @@ function openCardDialog(card = null) {
     form.elements.category.value = state.module === "git"
       ? (state.category !== "all" ? state.category : "daily")
       : (state.category !== "all" ? state.category : form.elements.category.options[0].value);
+    renderCategoryPicker();
+    syncCategoryInputUi();
   }
 
   const eyebrow = form.querySelector(".eyebrow");
@@ -3081,6 +3138,8 @@ function openCardDialog(card = null) {
   if (card) {
     form.elements.title.value = card.title || "";
     form.elements.category.value = card.category || form.elements.category.value;
+    renderCategoryPicker();
+    syncCategoryInputUi();
     form.elements.scenario.value = getDisplayScenario(card);
     form.elements.command.value = getEditableCommand(card);
     form.elements.note.value = card.note || "";

@@ -2156,7 +2156,112 @@ body.theme-light #cardForm > .primary-button[type="submit"] {
 }
 
 .category-field {
+  position: relative;
   grid-template-columns: 1fr;
+}
+
+.category-field select {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.category-picker {
+  position: relative;
+  z-index: 6;
+}
+
+.category-picker-button {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)),
+    rgba(12, 16, 28, 0.72);
+  color: var(--text);
+  cursor: pointer;
+  padding: 0 13px;
+  text-align: left;
+  font: inherit;
+  font-size: 14px;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.category-picker-button:hover,
+.category-picker.is-open .category-picker-button {
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.category-picker-arrow {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  color: var(--accent);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 160ms ease;
+}
+
+.category-picker.is-open .category-picker-arrow {
+  transform: rotate(225deg) translateY(-2px);
+}
+
+.category-picker-menu {
+  position: absolute;
+  right: 0;
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 20;
+  display: grid;
+  max-height: min(260px, 42vh);
+  overflow: auto;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(20, 26, 42, 0.98), rgba(11, 15, 27, 0.98));
+  box-shadow:
+    0 20px 44px rgba(3, 8, 18, 0.36),
+    0 0 0 1px rgba(255, 255, 255, 0.035);
+  padding: 6px;
+}
+
+.category-picker-menu[hidden] {
+  display: none;
+}
+
+.category-picker-option {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--soft);
+  cursor: pointer;
+  padding: 0 10px;
+  text-align: left;
+  font: inherit;
+  font-size: 14px;
+}
+
+.category-picker-option:hover {
+  background: color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.04));
+  color: var(--text);
+}
+
+.category-picker-option.active {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 24%, transparent), color-mix(in srgb, var(--jupiter) 12%, transparent));
+  color: var(--accent);
+  font-weight: 800;
 }
 
 .category-field .new-category-input[hidden] {
@@ -2180,6 +2285,35 @@ body.theme-light .card-form textarea,
 body.theme-light .card-form select {
   background: rgba(247, 253, 255, 0.88);
   color: var(--text);
+}
+
+body.theme-light .category-picker-button {
+  background:
+    linear-gradient(180deg, rgba(252, 254, 255, 0.88), rgba(230, 248, 255, 0.7)),
+    rgba(244, 252, 255, 0.82);
+  color: #12344f;
+}
+
+body.theme-light .category-picker-menu {
+  background:
+    linear-gradient(180deg, rgba(249, 254, 255, 0.98), rgba(228, 248, 255, 0.98));
+  box-shadow:
+    0 20px 44px rgba(25, 102, 145, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.48);
+}
+
+body.theme-light .category-picker-option {
+  color: #315c76;
+}
+
+body.theme-light .category-picker-option:hover {
+  background: rgba(86, 184, 219, 0.14);
+  color: #0d3652;
+}
+
+body.theme-light .category-picker-option.active {
+  background: linear-gradient(135deg, rgba(85, 211, 229, 0.3), rgba(173, 229, 242, 0.28));
+  color: #087990;
 }
 
 .card-form textarea {

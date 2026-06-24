@@ -180,6 +180,13 @@
             <option value="stash">暂存</option>
             <option value="danger">危险</option>
           </select>
+          <div class="category-picker" id="categoryPicker">
+            <button class="category-picker-button" id="categoryPickerButton" type="button" aria-haspopup="listbox" aria-expanded="false">
+              <span id="categoryPickerText">日常</span>
+              <span class="category-picker-arrow" aria-hidden="true"></span>
+            </button>
+            <div class="category-picker-menu" id="categoryPickerMenu" role="listbox" hidden></div>
+          </div>
           <input name="newCategory" class="new-category-input" placeholder="新分类名（可选）" hidden />
         </label>
         <label><span data-i18n="formScenario">场景</span> <textarea name="scenario" rows="2" placeholder="什么时候用这张卡"></textarea></label>
