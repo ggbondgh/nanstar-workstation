@@ -1112,6 +1112,70 @@ code {
   overflow-wrap: anywhere;
 }
 
+.card-section-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.card-section-block {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(94, 240, 221, 0.12);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012)),
+    rgba(3, 7, 14, 0.74);
+  padding: 10px;
+}
+
+.card-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.card-section-head strong {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.card-section-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.section-copy-button,
+.section-toggle-button {
+  min-height: 26px;
+  padding-inline: 9px;
+  border-color: rgba(94, 240, 221, 0.24);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.card-section-block .section-plain {
+  padding: 8px 10px;
+}
+
+.section-lines {
+  display: none;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid rgba(94, 240, 221, 0.12);
+  background: rgba(3, 7, 14, 0.78);
+}
+
+.card-section-block.is-expanded .section-plain {
+  display: none;
+}
+
+.card-section-block.is-expanded .section-lines {
+  display: block;
+}
+
 .command-block::selection,
 .command-block *::selection {
   background: rgba(89, 150, 255, 0.68);
@@ -1211,6 +1275,18 @@ body.theme-light .command-block-plain {
 
 body.theme-light .command-block-plain code {
   color: #12344a;
+}
+
+body.theme-light .card-section-block {
+  border-color: rgba(58, 143, 186, 0.16);
+  background:
+    linear-gradient(180deg, rgba(250, 255, 255, 0.76), rgba(226, 244, 252, 0.5)),
+    rgba(245, 252, 255, 0.82);
+}
+
+body.theme-light .section-lines {
+  border-color: rgba(58, 143, 186, 0.14);
+  background: rgba(239, 248, 252, 0.94);
 }
 
 .command-line {
@@ -1839,6 +1915,75 @@ body.theme-light .card-form select {
 .snippet-editor {
   display: grid;
   gap: 12px;
+}
+
+.section-editor {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+  padding: 12px;
+}
+
+.section-editor-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-editor-top strong {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.section-editor-top span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.section-edit-list {
+  display: grid;
+  gap: 10px;
+}
+
+.section-edit-block {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(94, 240, 221, 0.14);
+  border-radius: 8px;
+  background: rgba(3, 7, 14, 0.22);
+  padding: 10px;
+}
+
+.section-edit-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.section-edit-head strong {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.section-edit-block textarea {
+  min-height: 116px;
+  font-family: var(--font-mono);
+  line-height: 1.55;
+}
+
+body.theme-light .section-editor,
+body.theme-light .section-edit-block {
+  background: rgba(247, 253, 255, 0.58);
 }
 
 .snippet-edit-block {

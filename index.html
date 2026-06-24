@@ -181,6 +181,16 @@
         </label>
         <label><span data-i18n="formScenario">场景</span> <textarea name="scenario" rows="2" placeholder="什么时候用这张卡"></textarea></label>
         <label class="command-field"><span data-i18n="formCommand">命令</span> <textarea name="command" rows="4" required placeholder="git status"></textarea></label>
+        <div class="section-editor" id="sectionEditor" hidden>
+          <div class="section-editor-top">
+            <div>
+              <strong data-i18n="formSections">内容分段</strong>
+              <span data-i18n="formSectionsHint">把一张卡拆成多个可单独复制的小片段</span>
+            </div>
+            <button class="ghost-button compact" id="addSectionButton" type="button" data-i18n="addSection">添加小卡片</button>
+          </div>
+          <div class="section-edit-list" id="sectionEditorList"></div>
+        </div>
         <div class="snippet-editor" id="snippetEditor" hidden></div>
         <label><span data-i18n="formNote">备注</span> <textarea name="note" rows="2" placeholder="执行前要注意什么"></textarea></label>
         <label><span data-i18n="formTags">标签</span> <input name="tags" placeholder="用逗号分隔，例如 git,撤销,commit" /></label>

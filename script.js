@@ -136,6 +136,9 @@ const uiText = {
     copy: "复制",
     copyAll: "复制全部",
     copySnippet: "复制整段",
+    copySection: "复制本段",
+    toggleLines: "逐行",
+    collapseLines: "收起",
     copyConfig: "复制 config.toml",
     copyLine: "复制此行",
     editAction: "编辑",
@@ -173,6 +176,12 @@ const uiText = {
     formCategory: "分类",
     formScenario: "场景",
     formCommand: "命令",
+    formSections: "内容分段",
+    formSectionsHint: "把一张卡拆成多个可单独复制的小片段",
+    addSection: "添加小卡片",
+    sectionTitle: "小标题",
+    sectionContent: "内容",
+    removeSection: "删除",
     formSnippetContent: "内容",
     formNote: "备注",
     formTags: "标签",
@@ -253,6 +262,9 @@ const uiText = {
     copy: "Copy",
     copyAll: "Copy All",
     copySnippet: "Copy Block",
+    copySection: "Copy Section",
+    toggleLines: "Lines",
+    collapseLines: "Collapse",
     copyConfig: "Copy config.toml",
     copyLine: "Copy this line",
     editAction: "Edit",
@@ -290,6 +302,12 @@ const uiText = {
     formCategory: "Category",
     formScenario: "Scenario",
     formCommand: "Command",
+    formSections: "Sections",
+    formSectionsHint: "Split a card into smaller copyable blocks",
+    addSection: "Add Block",
+    sectionTitle: "Block title",
+    sectionContent: "Content",
+    removeSection: "Remove",
     formSnippetContent: "Content",
     formNote: "Note",
     formTags: "Tags",
@@ -1003,7 +1021,10 @@ const elements = {
   solarOverlay: document.getElementById("solarOverlay"),
   solarSystemLarge: document.getElementById("solarSystemLarge"),
   celestialInfo: document.getElementById("celestialInfo"),
-  detailContent: document.getElementById("detailContent")
+  detailContent: document.getElementById("detailContent"),
+  sectionEditor: document.getElementById("sectionEditor"),
+  sectionEditorList: document.getElementById("sectionEditorList"),
+  addSectionButton: document.getElementById("addSectionButton")
 };
 
 const state = {
@@ -1230,6 +1251,23 @@ function bindEvents() {
     saveCardForm(new FormData(elements.cardForm));
   });
 
+  elements.addSectionButton?.addEventListener("click", () => {
+    appendSectionEditorBlock();
+  });
+
+  elements.sectionEditorList?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-section-editor-action]");
+    if (!button) return;
+    if (button.dataset.sectionEditorAction === "remove") {
+      button.closest(".section-edit-block")?.remove();
+      syncCommandFromSections();
+    }
+  });
+
+  elements.sectionEditorList?.addEventListener("input", () => {
+    syncCommandFromSections();
+  });
+
   elements.themeToggle?.addEventListener("click", () => {
     const nextTheme = document.body.classList.contains("theme-light") ? "dark" : "light";
     applyTheme(nextTheme);
@@ -1249,6 +1287,7 @@ function bindEvents() {
 
   elements.cardGrid?.addEventListener("click", async (event) => {
     const copyLineButton = event.target.closest("[data-action='copy-line']");
+    const toggleSectionButton = event.target.closest("[data-action='toggle-section-lines']");
     const copyButton = event.target.closest("[data-action='copy']");
     const favoriteButton = event.target.closest("[data-action='favorite']");
     const editButton = event.target.closest("[data-action='edit']");
@@ -1261,6 +1300,15 @@ function bindEvents() {
       const cardId = copyLineButton.closest(".command-card")?.dataset.id;
       const copied = await copyText(copyLineButton.dataset.command || "");
       if (copied && cardId) recordCardUsage(cardId);
+      return;
+    }
+
+    if (toggleSectionButton) {
+      event.stopPropagation();
+      const block = toggleSectionButton.closest(".card-section-block");
+      const expanded = block?.classList.toggle("is-expanded");
+      toggleSectionButton.textContent = expanded ? getText().collapseLines : getText().toggleLines;
+      toggleSectionButton.setAttribute("aria-expanded", String(Boolean(expanded)));
       return;
     }
 
@@ -1452,6 +1500,11 @@ function renderCards(cards) {
 }
 
 function renderCommandBlock(card, t) {
+  const sections = getCardSections(card);
+  if (sections.length) {
+    return renderCardSections(card, sections, t);
+  }
+
   if (shouldRenderPlainCommandBlock(card)) {
     return `<pre class="command-block command-block-plain"><code>${escapeHtml(card.command || "")}</code></pre>`;
   }
@@ -1466,6 +1519,36 @@ function renderCommandBlock(card, t) {
 function shouldRenderPlainCommandBlock(card) {
   const module = getCardModule(card);
   return card?.category === "wk-snippets" || Boolean(card?.custom && module !== "git");
+}
+
+function renderCardSections(card, sections, t) {
+  return `
+    <div class="card-section-stack">
+      ${sections.map((section, index) => renderCardSection(card, section, index, t)).join("")}
+    </div>
+  `;
+}
+
+function renderCardSection(card, section, index, t) {
+  const title = clean(section.title) || `${t.formSections} ${index + 1}`;
+  const content = String(section.content || "");
+  const lines = content.split("\n").filter((line) => line.trim());
+  const lineHtml = lines.map((line) =>
+    `<div class="command-line"><span class="line-text">${escapeHtml(line)}</span><button class="copy-line-button" type="button" data-action="copy-line" data-command="${escapeAttr(line)}" title="${escapeAttr(t.copyLine)}">${escapeHtml(t.copy)}</button></div>`
+  ).join("");
+  return `
+    <section class="card-section-block">
+      <div class="card-section-head">
+        <strong>${escapeHtml(title)}</strong>
+        <div class="card-section-actions">
+          ${lines.length > 1 ? `<button class="copy-button section-toggle-button" type="button" data-action="toggle-section-lines" aria-expanded="false">${escapeHtml(t.toggleLines)}</button>` : ""}
+          <button class="copy-button section-copy-button" type="button" data-action="copy" data-command="${escapeAttr(content)}" data-id="${escapeAttr(card.id)}">${escapeHtml(t.copySection)}</button>
+        </div>
+      </div>
+      <pre class="command-block command-block-plain section-plain"><code>${escapeHtml(content)}</code></pre>
+      <pre class="command-block section-lines">${lineHtml}</pre>
+    </section>
+  `;
 }
 
 function renderConfigSnippets(card, t) {
@@ -1817,11 +1900,6 @@ function applyLanguage(language) {
   form.elements.note.placeholder = t.notePlaceholder;
   form.elements.tags.placeholder = t.tagsPlaceholder;
   renderCardCategoryOptions();
-  if (state.editingId && state.editingLayout === "config") {
-    const card = getAllCards().find((item) => item.id === state.editingId);
-    renderSnippetEditor(card);
-  }
-
   renderSyncUi();
   clearCelestialSelection();
   applyTheme(document.body.classList.contains("theme-light") ? "light" : "dark");
@@ -2472,6 +2550,7 @@ function openCardDialog(card = null) {
   }
 
   renderSnippetEditor(card);
+  renderSectionEditor(card);
   syncCardDialogMode(card?.layout === "config");
 
   elements.cardDialog?.showModal();
@@ -2503,6 +2582,91 @@ function getConfigSnippetsFromForm(formData, baseCard) {
   });
 }
 
+function getSectionsFromEditor() {
+  if (!elements.sectionEditor || elements.sectionEditor.hidden || !elements.sectionEditorList) return [];
+  return Array.from(elements.sectionEditorList.querySelectorAll(".section-edit-block"))
+    .map((block) => ({
+      title: clean(block.querySelector("[name='sectionTitle']")?.value),
+      content: normalizeMultilineInput(block.querySelector("[name='sectionContent']")?.value)
+    }))
+    .filter((section) => section.title || section.content)
+    .map((section, index) => ({
+      id: `section-${index + 1}`,
+      title: section.title || `片段 ${index + 1}`,
+      content: section.content
+    }))
+    .filter((section) => section.content);
+}
+
+function getCardSections(card) {
+  const explicitSections = normalizeSections(card?.sections);
+  if (explicitSections.length) return explicitSections;
+  if (!card || card.layout === "config") return [];
+  if (getCardModule(card) === "git") return [];
+  return parseCommandSections(card.command);
+}
+
+function normalizeSections(sections) {
+  if (!Array.isArray(sections)) return [];
+  return sections
+    .map((section, index) => ({
+      id: clean(section?.id) || `section-${index + 1}`,
+      title: clean(section?.title),
+      content: normalizeMultilineInput(section?.content)
+    }))
+    .filter((section) => section.title && section.content);
+}
+
+function parseCommandSections(command) {
+  const lines = normalizeMultilineInput(command).split("\n");
+  const sections = [];
+  let current = null;
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (current && current.content.length) current.content.push("");
+      return;
+    }
+    if (isSectionTitleLine(trimmed)) {
+      if (current) sections.push(current);
+      current = { title: trimmed.replace(/[：:]\s*$/, ""), content: [] };
+      return;
+    }
+    if (current) {
+      current.content.push(line);
+    }
+  });
+
+  if (current) sections.push(current);
+  return sections
+    .map((section, index) => ({
+      id: `auto-section-${index + 1}`,
+      title: section.title,
+      content: normalizeMultilineInput(section.content.join("\n"))
+    }))
+    .filter((section) => section.title && section.content);
+}
+
+function isSectionTitleLine(line) {
+  if (!/[：:]$/.test(line)) return false;
+  if (line.length > 36) return false;
+  return !/[\\/<>{}[\]();=]/.test(line);
+}
+
+function sectionsToCommand(sections) {
+  return normalizeSections(sections)
+    .map((section) => `${section.title}：\n${section.content}`)
+    .join("\n\n");
+}
+
+function syncCommandFromSections() {
+  if (!elements.cardForm || !shouldShowSectionEditor()) return;
+  const sections = getSectionsFromEditor();
+  if (!sections.length) return;
+  elements.cardForm.elements.command.value = sectionsToCommand(sections);
+}
+
 function resetCardDialog() {
   state.editingId = null;
   state.editingLayout = null;
@@ -2510,6 +2674,8 @@ function resetCardDialog() {
   syncCardDialogMode(false);
   const editor = document.getElementById("snippetEditor");
   if (editor) editor.innerHTML = "";
+  if (elements.sectionEditorList) elements.sectionEditorList.innerHTML = "";
+  if (elements.sectionEditor) elements.sectionEditor.hidden = true;
   applyCardDialogText();
 }
 
@@ -2528,8 +2694,51 @@ function applyCardDialogText() {
 function syncCardDialogMode(isConfig) {
   const commandField = elements.cardForm?.querySelector(".command-field");
   const editor = document.getElementById("snippetEditor");
+  const showSections = !isConfig && shouldShowSectionEditor();
   if (commandField) commandField.hidden = Boolean(isConfig);
+  if (elements.sectionEditor) elements.sectionEditor.hidden = !showSections;
   if (editor) editor.hidden = !isConfig;
+}
+
+function shouldShowSectionEditor() {
+  const editingCard = state.editingId ? getAllCards().find((card) => card.id === state.editingId) : null;
+  const module = editingCard ? getCardModule(editingCard) : state.module;
+  return module !== "git";
+}
+
+function renderSectionEditor(card) {
+  if (!elements.sectionEditorList) return;
+  elements.sectionEditorList.innerHTML = "";
+  if (card?.layout === "config" || !shouldShowSectionEditor()) {
+    if (elements.sectionEditor) elements.sectionEditor.hidden = true;
+    return;
+  }
+
+  const sections = getCardSections(card);
+  sections.forEach((section) => appendSectionEditorBlock(section));
+  if (elements.sectionEditor) elements.sectionEditor.hidden = false;
+}
+
+function appendSectionEditorBlock(section = {}) {
+  if (!elements.sectionEditorList) return;
+  const t = getText();
+  const block = document.createElement("section");
+  block.className = "section-edit-block";
+  block.innerHTML = `
+    <div class="section-edit-head">
+      <strong>${escapeHtml(t.formSections)}</strong>
+      <button class="ghost-button compact" type="button" data-section-editor-action="remove">${escapeHtml(t.removeSection)}</button>
+    </div>
+    <label>
+      <span>${escapeHtml(t.sectionTitle)}</span>
+      <input name="sectionTitle" value="${escapeAttr(section.title || "")}" placeholder="${escapeAttr(t.sectionTitle)}" />
+    </label>
+    <label>
+      <span>${escapeHtml(t.sectionContent)}</span>
+      <textarea name="sectionContent" rows="4" placeholder="${escapeAttr(t.sectionContent)}">${escapeHtml(section.content || "")}</textarea>
+    </label>
+  `;
+  elements.sectionEditorList.appendChild(block);
 }
 
 function renderSnippetEditor(card) {
@@ -2591,9 +2800,11 @@ function getCardInput(formData, baseCard = null) {
   const title = clean(formData.get("title"));
   const isConfigCard = baseCard?.layout === "config";
   const snippets = isConfigCard ? getConfigSnippetsFromForm(formData, baseCard) : null;
+  const sections = isConfigCard ? [] : getSectionsFromEditor();
+  const sectionCommand = sectionsToCommand(sections);
   const command = isConfigCard
     ? clean(snippets?.find((snippet) => snippet.primary)?.content || snippets?.[snippets.length - 1]?.content || "")
-    : normalizeMultilineInput(formData.get("command"));
+    : sectionCommand || normalizeMultilineInput(formData.get("command"));
   if (!title || !command) {
     showToast(t.titleRequired);
     return null;
@@ -2621,7 +2832,8 @@ function getCardInput(formData, baseCard = null) {
     scenario: clean(formData.get("scenario")) || t.customScenario,
     note: clean(formData.get("note")),
     tags: tags.length ? tags : ["custom"],
-    snippets
+    snippets,
+    sections
   };
 }
 
@@ -2645,6 +2857,9 @@ function saveCustomCard(formData) {
   if (input.snippets) {
     card.layout = "config";
     card.snippets = input.snippets;
+  }
+  if (input.sections.length) {
+    card.sections = input.sections;
   }
 
   customCards = [card, ...customCards];
@@ -2685,6 +2900,11 @@ function updateCard(id, formData) {
   if (currentCard.layout) patch.layout = currentCard.layout;
   if (currentCard.layout === "config") {
     patch.snippets = input.snippets || updatePrimarySnippet(currentCard, input.command);
+  }
+  if (input.sections.length) {
+    patch.sections = input.sections;
+  } else if (currentCard.sections) {
+    patch.sections = [];
   }
 
   if (currentCard.custom) {
