@@ -7,6 +7,7 @@ const storageKeys = {
   deletedCards: "nanstar-workstation-deleted-cards",
   recentCards: "nanstar-workstation-recent",
   cardFrequency: "nanstar-workstation-frequency",
+  customModules: "nanstar-workstation-custom-modules",
   moduleOrder: "nanstar-workstation-module-order",
   syncEmail: "nanstar-workstation-sync-email",
   localUpdatedAt: "nanstar-workstation-local-updated-at"
@@ -35,7 +36,7 @@ const categoryMeta = {
   "api-relay": { label: "API 中转站", labelEn: "API Relay", sub: "模型代理配置", subEn: "Model proxy config", eyebrow: "Mars Orbit / API Relay", title: "API 中转站", titleEn: "API Relay" }
 };
 
-const moduleMeta = {
+let moduleMeta = {
   git: { label: "Git", labelEn: "Git", sub: "命令速查", subEn: "Command cards", eyebrow: "Mercury Orbit / Git Module", title: "Git 命令工作台", titleEn: "Git Command Workstation", focusTitle: "快速定位 Git 命令", focusTitleEn: "Find Git Commands Fast", searchPlaceholder: "搜：撤销 / 邮箱 / rebase / index.lock", searchPlaceholderEn: "Search: undo / email / rebase / index.lock" },
   clients: { label: "客户", labelEn: "Clients", sub: "客户项目", subEn: "Client work", eyebrow: "Jupiter Orbit / Client Workspace", title: "客户工作区", titleEn: "Client Workspace", focusTitle: "快速定位客户资料", focusTitleEn: "Find Client Notes Fast", searchPlaceholder: "搜：拉取 / 编译 / 烧录 / NV / SSH", searchPlaceholderEn: "Search: clone / build / package / NV / SSH" },
   windows: { label: "Windows", labelEn: "Windows", sub: "系统命令", subEn: "System commands", eyebrow: "Earth Orbit / Windows Module", title: "Windows 与 PowerShell", titleEn: "Windows & PowerShell", focusTitle: "快速定位系统命令", focusTitleEn: "Find System Commands Fast", searchPlaceholder: "搜：休眠 / 端口 / 进程 / IP", searchPlaceholderEn: "Search: sleep / port / process / IP" },
@@ -45,6 +46,8 @@ const moduleMeta = {
   links: { label: "Links", labelEn: "Links", sub: "常用入口", subEn: "Quick links", eyebrow: "Neptune Orbit / Link Module", title: "常用链接入口", titleEn: "Quick Links", focusTitle: "快速定位入口", focusTitleEn: "Find Links Fast", searchPlaceholder: "搜：GitHub / Supabase / Cloudflare", searchPlaceholderEn: "Search: GitHub / Supabase / Cloudflare" },
   templates: { label: "Templates", labelEn: "Templates", sub: "工作模板", subEn: "Work templates", eyebrow: "Uranus Orbit / Template Module", title: "个人工作模板", titleEn: "Personal Templates", focusTitle: "快速定位模板", focusTitleEn: "Find Templates Fast", searchPlaceholder: "搜：日报 / 提交 / 项目 / 复盘", searchPlaceholderEn: "Search: daily / commit / project / review" }
 };
+
+const builtInModuleMeta = { ...moduleMeta };
 
 const clientMeta = {
   wk: { label: "微克", labelEn: "WK", title: "微克客户资料", titleEn: "WK Client Notes" }
@@ -86,7 +89,9 @@ const cardClassByCategory = {
 
 const moduleCategoryOptions = ["all", "config", "daily", "undo", "remote", "stash", "danger"];
 const clientCategoryOptions = ["all", "wk-flow", "wk-paths", "wk-interfaces", "wk-snippets", "wk-test", "wk-ops", "wk-checklist"];
-const defaultModuleOrder = ["git", "clients", "windows", "cloud", "database", "ai", "links", "templates"];
+const coreModuleOrder = ["git", "clients"];
+const defaultModuleOrder = coreModuleOrder;
+const customModuleClasses = ["earth-nav", "venus-nav", "saturn-nav", "mars-nav", "neptune-nav", "uranus-nav"];
 
 const uiText = {
   zh: {
@@ -106,6 +111,21 @@ const uiText = {
     favorites: "收藏",
     exitFavorites: "退出收藏",
     newCard: "新建卡片",
+    addModule: "添加模块",
+    moduleSub: "自定义模块",
+    modulePrompt: "模块名称",
+    moduleAddTitle: "添加模块",
+    moduleEditTitle: "重命名模块",
+    moduleSave: "保存模块",
+    moduleNameRequired: "模块名称不能为空",
+    moduleCreated: "模块已添加",
+    moduleRenamed: "模块已重命名",
+    moduleDeleted: "模块已删除",
+    moduleDeleteHint: "再次点击确认删除",
+    coreModuleLocked: "核心模块不可删除",
+    renameModule: "重命名",
+    deleteModule: "删除模块",
+    deleteModuleConfirm: "删除该模块和其中的自定义卡片？",
     resultEyebrow: "Command Cards / 命令卡片",
     favoriteCards: "收藏卡片",
     favoritedCommands: "已收藏命令",
@@ -208,6 +228,21 @@ const uiText = {
     favorites: "Favorites",
     exitFavorites: "Exit Favorites",
     newCard: "New Card",
+    addModule: "Add Module",
+    moduleSub: "Custom module",
+    modulePrompt: "Module name",
+    moduleAddTitle: "Add Module",
+    moduleEditTitle: "Rename Module",
+    moduleSave: "Save Module",
+    moduleNameRequired: "Module name is required",
+    moduleCreated: "Module added",
+    moduleRenamed: "Module renamed",
+    moduleDeleted: "Module deleted",
+    moduleDeleteHint: "Click again to delete",
+    coreModuleLocked: "Core module cannot be deleted",
+    renameModule: "Rename",
+    deleteModule: "Delete module",
+    deleteModuleConfirm: "Delete this module and its custom cards?",
     resultEyebrow: "Command Cards",
     favoriteCards: "Favorite Cards",
     favoritedCommands: "Favorited Commands",
@@ -930,6 +965,13 @@ const elements = {
   themeMeta: document.querySelector('meta[name="theme-color"]'),
   brandSub: document.querySelector(".brand p"),
   nav: document.querySelector(".nav"),
+  addModuleButton: document.getElementById("addModuleButton"),
+  moduleMenu: document.getElementById("moduleMenu"),
+  moduleDialog: document.getElementById("moduleDialog"),
+  moduleForm: document.getElementById("moduleForm"),
+  moduleDialogEyebrow: document.getElementById("moduleDialogEyebrow"),
+  moduleDialogTitle: document.getElementById("moduleDialogTitle"),
+  moduleSubmitButton: document.getElementById("moduleSubmitButton"),
   clientSelect: null,
   quickSearch: document.getElementById("quickSearch"),
   clearSearch: document.getElementById("clearSearch"),
@@ -985,7 +1027,9 @@ const state = {
   navPointerId: null,
   navPointerActive: false,
   navStartX: 0,
-  navStartY: 0
+  navStartY: 0,
+  moduleMenuTarget: null,
+  editingModuleId: null
 };
 
 let favorites = new Set(readJson(storageKeys.favorites, []));
@@ -994,10 +1038,11 @@ let editedCards = readJson(storageKeys.editedCards, []).filter(isValidCustomCard
 let deletedCards = new Set(readJson(storageKeys.deletedCards, []));
 let recentCards = readJson(storageKeys.recentCards, []);
 let cardFrequency = readJson(storageKeys.cardFrequency, {});
+let customModules = readJson(storageKeys.customModules, []).filter(isValidCustomModule);
 let moduleOrder = normalizeModuleOrder(readJson(storageKeys.moduleOrder, defaultModuleOrder));
 
 const systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
-applyModuleOrder();
+renderNav();
 applyTheme(localStorage.getItem(storageKeys.theme) || systemTheme);
 applyLanguage(state.language);
 bindEvents();
@@ -1023,6 +1068,13 @@ function bindEvents() {
     syncCategoryUi();
     render();
     scrollMainTop();
+  });
+
+  elements.nav?.addEventListener("contextmenu", (event) => {
+    const button = event.target.closest(".nav-item");
+    if (!button) return;
+    event.preventDefault();
+    openModuleMenu(button.dataset.module || "", event.clientX, event.clientY);
   });
 
   elements.nav?.addEventListener("pointerdown", (event) => {
@@ -1103,6 +1155,41 @@ function bindEvents() {
 
   elements.addCardButton?.addEventListener("click", () => {
     openCardDialog();
+  });
+
+  elements.addModuleButton?.addEventListener("click", () => {
+    openModuleDialog();
+  });
+
+  elements.moduleForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (event.submitter?.value === "cancel") {
+      elements.moduleDialog?.close("cancel");
+      resetModuleDialog();
+      return;
+    }
+    saveModuleForm(new FormData(elements.moduleForm));
+  });
+
+  elements.moduleMenu?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-module-action]");
+    const action = button?.dataset.moduleAction;
+    if (!button || !action || !state.moduleMenuTarget) return;
+    if (action === "rename") {
+      openModuleDialog(state.moduleMenuTarget);
+      closeModuleMenu();
+    }
+    if (action === "delete") handleDeleteModuleMenu(button, state.moduleMenuTarget);
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!elements.moduleMenu || elements.moduleMenu.hidden) return;
+    if (event.target.closest("#moduleMenu")) return;
+    closeModuleMenu();
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeModuleMenu();
   });
 
   elements.syncButton?.addEventListener("click", () => {
@@ -1541,9 +1628,7 @@ function renderCardCategoryOptions() {
     ? moduleCategoryOptions.filter((key) => key !== "all")
     : activeModule === "clients"
       ? clientCategoryOptions.filter((key) => key !== "all")
-      : editingCard?.category && editingCard.category !== activeModule
-        ? [editingCard.category]
-        : [activeModule];
+      : [activeModule];
   select.innerHTML = options.map((key) => {
     const label = activeModule === "git"
       ? localizeMeta(categoryMeta[key], "label")
@@ -1556,6 +1641,12 @@ function renderCardCategoryOptions() {
 
 function renderQuickFilters() {
   if (!elements.quickFilters) return;
+  if (state.module !== "git" && state.module !== "clients") {
+    elements.quickFilters.innerHTML = "";
+    elements.quickFilters.hidden = true;
+    elements.quickFilters.setAttribute("aria-hidden", "true");
+    return;
+  }
   const options = state.module === "clients" ? clientCategoryOptions : moduleCategoryOptions;
   elements.quickFilters.innerHTML = options.map((key) => {
     const label = state.module === "clients"
@@ -1683,12 +1774,12 @@ function applyLanguage(language) {
   elements.quickSearch.setAttribute("aria-label", t.searchAria);
   elements.clearSearch.textContent = t.clear;
   elements.addCardButton.textContent = t.newCard;
+  if (elements.addModuleButton) {
+    elements.addModuleButton.querySelector("strong").textContent = t.addModule;
+    elements.addModuleButton.setAttribute("aria-label", t.addModule);
+  }
 
-  getNavItems().forEach((button) => {
-    const meta = moduleMeta[button.dataset.module] || moduleMeta.git;
-    button.querySelector("span").textContent = localizeMeta(meta, "label");
-    button.querySelector("small").textContent = localizeMeta(meta, "sub");
-  });
+  renderNav();
 
   renderQuickFilters();
 
@@ -1703,6 +1794,7 @@ function applyLanguage(language) {
   elements.solarClose.setAttribute("aria-label", t.closeSolar);
 
   applyCardDialogText();
+  applyModuleDialogText();
   document.querySelector(".card-form button[value='cancel']").textContent = t.formClose;
   document.querySelectorAll("[data-i18n]").forEach((node) => {
     const key = node.dataset.i18n;
@@ -1724,6 +1816,15 @@ function applyLanguage(language) {
   renderSyncUi();
   clearCelestialSelection();
   applyTheme(document.body.classList.contains("theme-light") ? "light" : "dark");
+}
+
+function applyModuleDialogText() {
+  const t = getText();
+  if (elements.moduleDialogTitle) elements.moduleDialogTitle.textContent = state.editingModuleId ? t.moduleEditTitle : t.moduleAddTitle;
+  if (elements.moduleSubmitButton) elements.moduleSubmitButton.textContent = t.moduleSave;
+  if (elements.moduleForm?.elements.name) {
+    elements.moduleForm.elements.name.placeholder = state.language === "zh" ? "例如：AI 工具" : "Example: AI Tools";
+  }
 }
 
 async function initSync() {
@@ -1884,6 +1985,7 @@ function getLocalPayload() {
     deletedCards: Array.from(deletedCards),
     recentCards,
     cardFrequency,
+    customModules,
     moduleOrder,
     clientUpdatedAt: localStorage.getItem(storageKeys.localUpdatedAt) || new Date().toISOString(),
     savedAt: new Date().toISOString()
@@ -1893,6 +1995,7 @@ function getLocalPayload() {
 function mergeCloudPayload(cloudPayload, localPayload, options = {}) {
   const preferLocal = options.preferLocal || isLocalNewer(localPayload, cloudPayload);
   const preferenceSource = preferLocal ? localPayload : cloudPayload;
+  const mergedCustomModules = normalizeCustomModules(preferenceSource.customModules || localPayload.customModules || []);
   const deletedCards = normalizeStringArray([
     ...normalizeStringArray(cloudPayload.deletedCards),
     ...normalizeStringArray(localPayload.deletedCards)
@@ -1908,7 +2011,8 @@ function mergeCloudPayload(cloudPayload, localPayload, options = {}) {
     deletedCards,
     recentCards: normalizeStringArray(preferenceSource.recentCards || localPayload.recentCards).slice(0, 20),
     cardFrequency: mergeFrequency(cloudPayload.cardFrequency || {}, localPayload.cardFrequency || {}),
-    moduleOrder: normalizeModuleOrder(preferenceSource.moduleOrder || localPayload.moduleOrder),
+    customModules: mergedCustomModules,
+    moduleOrder: normalizeModuleOrderFor(preferenceSource.moduleOrder || localPayload.moduleOrder, mergedCustomModules),
     clientUpdatedAt: preferLocal ? localPayload.clientUpdatedAt : cloudPayload.clientUpdatedAt || localPayload.clientUpdatedAt,
     savedAt: new Date().toISOString()
   };
@@ -1923,7 +2027,9 @@ function applyCloudPayload(payload) {
   deletedCards = new Set(normalizeStringArray(payload.deletedCards));
   recentCards = Array.isArray(payload.recentCards) ? payload.recentCards.slice(0, 20) : [];
   cardFrequency = payload.cardFrequency && typeof payload.cardFrequency === "object" ? payload.cardFrequency : {};
+  customModules = normalizeCustomModules(payload.customModules || []);
   moduleOrder = normalizeModuleOrder(payload.moduleOrder || moduleOrder);
+  if (!moduleMeta[state.module]) state.module = "git";
   state.language = payload.language === "en" ? "en" : "zh";
   state.category = "all";
 
@@ -1933,6 +2039,7 @@ function applyCloudPayload(payload) {
   writeJson(storageKeys.deletedCards, Array.from(deletedCards));
   writeJson(storageKeys.recentCards, recentCards);
   writeJson(storageKeys.cardFrequency, cardFrequency);
+  writeJson(storageKeys.customModules, customModules);
   writeJson(storageKeys.moduleOrder, moduleOrder);
   localStorage.setItem(storageKeys.language, state.language);
   if (payload.clientUpdatedAt) localStorage.setItem(storageKeys.localUpdatedAt, payload.clientUpdatedAt);
@@ -1942,7 +2049,7 @@ function applyCloudPayload(payload) {
   }
 
   applyLanguage(state.language);
-  applyModuleOrder();
+  renderNav();
   render();
   state.suppressSync = false;
 }
@@ -1954,6 +2061,14 @@ function mergeCards(primaryCards, secondaryCards, deletedIds = []) {
     if (isValidCustomCard(card) && !deleted.has(card.id)) byId.set(card.id, card);
   });
   return Array.from(byId.values()).sort((a, b) => String(b.id).localeCompare(String(a.id)));
+}
+
+function normalizeCustomModules(modules) {
+  const byId = new Map();
+  (Array.isArray(modules) ? modules : []).forEach((module) => {
+    if (isValidCustomModule(module)) byId.set(module.id, normalizeCustomModule(module));
+  });
+  return Array.from(byId.values());
 }
 
 function normalizeStringArray(value) {
@@ -2022,14 +2137,35 @@ function getOrderedModules() {
   return normalizeModuleOrder(moduleOrder);
 }
 
-function applyModuleOrder() {
-  const ordered = getOrderedModules();
+function buildModuleMeta() {
+  const customMeta = Object.fromEntries(customModules.map((module) => [module.id, normalizeCustomModule(module)]));
+  return { ...builtInModuleMeta, ...customMeta };
+}
+
+function renderNav() {
   if (!elements.nav) return;
-  const nodes = new Map(getNavItems().map((button) => [button.dataset.module || "git", button]));
-  ordered.forEach((module) => {
-    const button = nodes.get(module);
-    if (button) elements.nav.appendChild(button);
-  });
+  moduleMeta = buildModuleMeta();
+  moduleOrder = normalizeModuleOrder(moduleOrder);
+  elements.nav.innerHTML = getOrderedModules().map((module, index) => renderNavItem(module, index)).join("");
+  syncCategoryUi();
+}
+
+function renderNavItem(module, index) {
+  const meta = moduleMeta[module] || moduleMeta.git;
+  const className = module === "git"
+    ? "mercury-nav"
+    : module === "clients"
+      ? "jupiter-nav"
+      : customModuleClasses[index % customModuleClasses.length];
+  const isActive = state.module === module ? " active" : "";
+  const customAttr = isCustomModule(module) ? ' data-custom-module="true"' : "";
+  return `
+    <button class="nav-item ${className}${isActive}" type="button" data-module="${escapeAttr(module)}"${customAttr}>
+      <span class="nav-label">${escapeHtml(localizeMeta(meta, "label"))}</span>
+      <small>${escapeHtml(localizeMeta(meta, "sub"))}</small>
+      <span class="nav-drag-handle" aria-hidden="true"></span>
+    </button>
+  `;
 }
 
 function commitModuleOrder() {
@@ -2039,6 +2175,156 @@ function commitModuleOrder() {
   writeJson(storageKeys.moduleOrder, moduleOrder);
   touchLocalState();
   scheduleCloudSync({ preferLocal: true });
+}
+
+function persistCustomModules() {
+  customModules = customModules.filter(isValidCustomModule).map(normalizeCustomModule);
+  writeJson(storageKeys.customModules, customModules);
+  moduleOrder = normalizeModuleOrder(moduleOrder);
+  writeJson(storageKeys.moduleOrder, moduleOrder);
+  touchLocalState();
+  scheduleCloudSync({ preferLocal: true });
+}
+
+function openModuleDialog(moduleId = null) {
+  const t = getText();
+  const module = moduleId ? customModules.find((item) => item.id === moduleId) : null;
+  state.editingModuleId = module?.id || null;
+  elements.moduleForm?.reset();
+  if (elements.moduleForm?.elements.name) {
+    elements.moduleForm.elements.name.value = module?.label || "";
+    elements.moduleForm.elements.name.placeholder = state.language === "zh" ? "例如：AI 工具" : "Example: AI Tools";
+  }
+  if (elements.moduleDialogEyebrow) elements.moduleDialogEyebrow.textContent = module ? "Module / Rename" : "Module / New";
+  if (elements.moduleDialogTitle) elements.moduleDialogTitle.textContent = module ? t.moduleEditTitle : t.moduleAddTitle;
+  if (elements.moduleSubmitButton) elements.moduleSubmitButton.textContent = t.moduleSave;
+  elements.moduleDialog?.showModal();
+  elements.moduleForm?.elements.name?.focus();
+}
+
+function resetModuleDialog() {
+  state.editingModuleId = null;
+  elements.moduleForm?.reset();
+}
+
+function saveModuleForm(formData) {
+  const t = getText();
+  const name = clean(formData.get("name"));
+  if (!name) {
+    showToast(t.moduleNameRequired);
+    return;
+  }
+
+  if (state.editingModuleId && isCustomModule(state.editingModuleId)) {
+    renameCustomModule(state.editingModuleId, name);
+    elements.moduleDialog?.close("saved");
+    resetModuleDialog();
+    return;
+  }
+
+  addCustomModule(name);
+  elements.moduleDialog?.close("saved");
+  resetModuleDialog();
+}
+
+function addCustomModule(name) {
+  const module = createCustomModule(name);
+  customModules = [...customModules, module];
+  moduleOrder = normalizeModuleOrder([...moduleOrder, module.id]);
+  state.module = module.id;
+  state.category = "all";
+  state.favoritesOnly = false;
+  state.selectedId = null;
+  persistCustomModules();
+  renderNav();
+  render();
+  scrollMainTop();
+  showToast(getText().moduleCreated);
+}
+
+function renameCustomModule(moduleId, nextName) {
+  if (!isCustomModule(moduleId)) return;
+  customModules = customModules.map((module) => (
+    module.id === moduleId
+      ? normalizeCustomModule({ ...module, label: nextName, labelEn: nextName, title: nextName, titleEn: nextName, focusTitle: `快速定位${nextName}`, focusTitleEn: `Find ${nextName} Fast` })
+      : module
+  ));
+  persistCustomModules();
+  renderNav();
+  render();
+  showToast(getText().moduleRenamed);
+}
+
+function handleDeleteModuleMenu(button, moduleId) {
+  const t = getText();
+  if (button.dataset.confirm !== "true") {
+    button.dataset.confirm = "true";
+    button.textContent = t.moduleDeleteHint;
+    button.classList.add("is-confirming");
+    clearTimeout(handleDeleteModuleMenu.timer);
+    handleDeleteModuleMenu.timer = setTimeout(() => {
+      button.dataset.confirm = "false";
+      button.textContent = t.deleteModule;
+      button.classList.remove("is-confirming");
+    }, 2200);
+    showToast(t.moduleDeleteHint);
+    return;
+  }
+  deleteCustomModule(moduleId);
+  closeModuleMenu();
+}
+
+function deleteCustomModule(moduleId) {
+  if (!isCustomModule(moduleId)) return;
+  const t = getText();
+  const moduleCards = customCards.filter((card) => card.module === moduleId).map((card) => card.id);
+  customCards = customCards.filter((card) => card.module !== moduleId);
+  editedCards = editedCards.filter((card) => card.module !== moduleId);
+  moduleCards.forEach((id) => {
+    favorites.delete(id);
+    recentCards = recentCards.filter((cardId) => cardId !== id);
+    delete cardFrequency[id];
+  });
+  customModules = customModules.filter((module) => module.id !== moduleId);
+  moduleOrder = normalizeModuleOrder(moduleOrder.filter((module) => module !== moduleId));
+  if (state.module === moduleId) {
+    state.module = "git";
+    state.category = "all";
+    state.selectedId = null;
+  }
+  writeJson(storageKeys.customCards, customCards);
+  writeJson(storageKeys.editedCards, editedCards);
+  writeJson(storageKeys.favorites, Array.from(favorites));
+  writeJson(storageKeys.recentCards, recentCards);
+  writeJson(storageKeys.cardFrequency, cardFrequency);
+  persistCustomModules();
+  renderNav();
+  render();
+  showToast(t.moduleDeleted);
+}
+
+function openModuleMenu(moduleId, x, y) {
+  if (!elements.moduleMenu || !moduleMeta[moduleId]) return;
+  const t = getText();
+  state.moduleMenuTarget = moduleId;
+  const canDelete = isCustomModule(moduleId);
+  elements.moduleMenu.innerHTML = canDelete
+    ? `
+      <button type="button" data-module-action="rename">${escapeHtml(t.renameModule)}</button>
+      <button class="danger" type="button" data-module-action="delete">${escapeHtml(t.deleteModule)}</button>
+    `
+    : `<span class="module-menu-note">${escapeHtml(t.coreModuleLocked)}</span>`;
+  elements.moduleMenu.hidden = false;
+  const rect = elements.moduleMenu.getBoundingClientRect();
+  const left = Math.min(x, window.innerWidth - rect.width - 12);
+  const top = Math.min(y, window.innerHeight - rect.height - 12);
+  elements.moduleMenu.style.left = `${Math.max(12, left)}px`;
+  elements.moduleMenu.style.top = `${Math.max(12, top)}px`;
+}
+
+function closeModuleMenu() {
+  state.moduleMenuTarget = null;
+  if (elements.moduleMenu) elements.moduleMenu.hidden = true;
 }
 
 function startNavSort(button, pointerId) {
@@ -2090,15 +2376,42 @@ function moveNavItem(module, targetModule, after = false) {
   const dragging = elements.nav.querySelector(`.nav-item[data-module="${cssEscape(module)}"]`);
   const target = elements.nav.querySelector(`.nav-item[data-module="${cssEscape(targetModule)}"]`);
   if (!dragging || !target) return;
+  const beforeRects = new Map(getNavItems().map((item) => [item, item.getBoundingClientRect()]));
   elements.nav.insertBefore(dragging, after ? target.nextSibling : target);
+  animateNavShift(beforeRects);
   state.dragMoved = true;
 }
 
+function animateNavShift(beforeRects) {
+  getNavItems().forEach((item) => {
+    if (item.classList.contains("is-dragging")) return;
+    const before = beforeRects.get(item);
+    if (!before) return;
+    const after = item.getBoundingClientRect();
+    const deltaY = before.top - after.top;
+    if (!deltaY) return;
+    item.animate([
+      { transform: `translateY(${deltaY}px) scale(0.985)` },
+      { transform: "translateY(0) scale(1.01)", offset: 0.72 },
+      { transform: "translateY(0) scale(1)" }
+    ], {
+      duration: 260,
+      easing: "cubic-bezier(0.2, 0.9, 0.2, 1)",
+      fill: "both"
+    });
+  });
+}
+
 function normalizeModuleOrder(list = []) {
+  return normalizeModuleOrderFor(list, customModules);
+}
+
+function normalizeModuleOrderFor(list = [], modules = customModules) {
   const seen = new Set();
   const order = [];
-  [...list, ...defaultModuleOrder].forEach((module) => {
-    if (!moduleMeta[module] || seen.has(module)) return;
+  const visibleModules = [...coreModuleOrder, ...normalizeCustomModules(modules).map((module) => module.id)];
+  [...list, ...visibleModules].forEach((module) => {
+    if (!visibleModules.includes(module) || seen.has(module)) return;
     seen.add(module);
     order.push(module);
   });
@@ -2283,7 +2596,7 @@ function getCardInput(formData, baseCard = null) {
     ? (categoryMeta[rawCategory] && rawCategory !== "all" ? rawCategory : "daily")
     : activeModule === "clients"
       ? (clientCategoryMeta[rawCategory] && rawCategory !== "all" ? rawCategory : baseCard?.category || "wk-flow")
-      : baseCard?.category || activeModule;
+      : activeModule;
   const tags = clean(formData.get("tags"))
     .split(/[,\uFF0C]/)
     .map((tag) => tag.trim())
@@ -2658,6 +2971,38 @@ function scrollMainTop() {
 
 function isValidCustomCard(card) {
   return Boolean(card && typeof card.id === "string" && typeof card.title === "string" && typeof card.command === "string");
+}
+
+function isValidCustomModule(module) {
+  return Boolean(module && typeof module.id === "string" && module.id.startsWith("module-") && typeof module.label === "string" && module.label.trim());
+}
+
+function normalizeCustomModule(module) {
+  const label = clean(module.label);
+  return {
+    id: clean(module.id),
+    label,
+    labelEn: clean(module.labelEn) || label,
+    sub: clean(module.sub) || "自定义模块",
+    subEn: clean(module.subEn) || "Custom module",
+    eyebrow: clean(module.eyebrow) || "Custom Orbit / Work Module",
+    eyebrowEn: clean(module.eyebrowEn) || "Custom Orbit / Work Module",
+    title: clean(module.title) || label,
+    titleEn: clean(module.titleEn) || clean(module.labelEn) || label,
+    focusTitle: clean(module.focusTitle) || `快速定位${label}`,
+    focusTitleEn: clean(module.focusTitleEn) || `Find ${clean(module.labelEn) || label} Fast`,
+    searchPlaceholder: clean(module.searchPlaceholder) || `搜：${label}`,
+    searchPlaceholderEn: clean(module.searchPlaceholderEn) || `Search: ${clean(module.labelEn) || label}`
+  };
+}
+
+function createCustomModule(label) {
+  const id = `module-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  return normalizeCustomModule({ id, label });
+}
+
+function isCustomModule(moduleId) {
+  return customModules.some((module) => module.id === moduleId);
 }
 
 function escapeHtml(value) {

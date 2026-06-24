@@ -36,37 +36,11 @@
             <small>客户项目</small>
             <span class="nav-drag-handle" aria-hidden="true"></span>
           </button>
-          <button class="nav-item earth-nav" type="button" data-module="windows">
-            <span class="nav-label">Windows</span>
-            <small>系统命令</small>
-            <span class="nav-drag-handle" aria-hidden="true"></span>
-          </button>
-          <button class="nav-item venus-nav" type="button" data-module="cloud">
-            <span class="nav-label">Cloud</span>
-            <small>部署入口</small>
-            <span class="nav-drag-handle" aria-hidden="true"></span>
-          </button>
-          <button class="nav-item saturn-nav" type="button" data-module="database">
-            <span class="nav-label">Database</span>
-            <small>数据同步</small>
-            <span class="nav-drag-handle" aria-hidden="true"></span>
-          </button>
-          <button class="nav-item mars-nav" type="button" data-module="ai">
-            <span class="nav-label">AI</span>
-            <small>提示模板</small>
-            <span class="nav-drag-handle" aria-hidden="true"></span>
-          </button>
-          <button class="nav-item neptune-nav" type="button" data-module="links">
-            <span class="nav-label">Links</span>
-            <small>常用入口</small>
-            <span class="nav-drag-handle" aria-hidden="true"></span>
-          </button>
-          <button class="nav-item uranus-nav" type="button" data-module="templates">
-            <span class="nav-label">Templates</span>
-            <small>工作模板</small>
-            <span class="nav-drag-handle" aria-hidden="true"></span>
-          </button>
         </nav>
+        <button class="add-module-button" id="addModuleButton" type="button">
+          <span aria-hidden="true">+</span>
+          <strong>添加模块</strong>
+        </button>
       </aside>
 
       <main class="main" id="mainScroll">
@@ -238,7 +212,22 @@
       </form>
     </dialog>
 
+    <dialog class="card-dialog module-dialog" id="moduleDialog">
+      <form method="dialog" class="card-form" id="moduleForm">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow" id="moduleDialogEyebrow">Module / 模块</p>
+            <h3 id="moduleDialogTitle">添加模块</h3>
+          </div>
+          <button class="ghost-button compact" value="cancel" type="submit" formnovalidate data-i18n="formClose">关闭</button>
+        </div>
+        <label><span data-i18n="modulePrompt">模块名称</span> <input name="name" required placeholder="例如：AI 工具" /></label>
+        <button class="primary-button" id="moduleSubmitButton" type="submit" value="default">保存模块</button>
+      </form>
+    </dialog>
+
     <div class="toast" id="toast">Copied to clipboard</div>
+    <div class="module-menu" id="moduleMenu" hidden></div>
     <section class="solar-overlay" id="solarOverlay" aria-hidden="true">
       <div class="solar-overlay-top">
         <div>
