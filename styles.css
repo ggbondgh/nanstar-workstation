@@ -1087,29 +1087,29 @@ body.theme-light .command-card {
 
 .command-card header {
   position: relative;
-  padding-right: 38px;
+  padding-right: 34px;
 }
 
 .card-zoom-button {
   position: absolute;
   top: 0;
   right: 0;
-  width: 31px;
-  min-width: 31px;
-  height: 31px;
-  min-height: 31px;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
   padding: 0;
-  border-color: color-mix(in srgb, var(--card-color) 22%, var(--line));
-  background: rgba(255, 255, 255, 0.035);
+  border-color: color-mix(in srgb, var(--card-color) 18%, var(--line));
+  background: rgba(255, 255, 255, 0.018);
   color: color-mix(in srgb, var(--card-color) 70%, var(--muted));
-  opacity: 0.72;
+  opacity: 0.64;
 }
 
 .shrink-button {
-  width: 36px;
-  min-width: 36px;
-  height: 36px;
-  min-height: 36px;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
   padding: 0;
   border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
   background: color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.05));
@@ -1676,48 +1676,32 @@ body.theme-light .detail-note {
 
 .expand-icon,
 .shrink-icon {
-  position: relative;
   display: inline-block;
-  width: 18px;
-  height: 18px;
+  width: 13px;
+  height: 13px;
+  background: currentColor;
   transition: transform 160ms ease;
-}
-
-.expand-icon::before,
-.expand-icon::after,
-.shrink-icon::before,
-.shrink-icon::after {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  background:
-    linear-gradient(currentColor 0 0) left top / 8px 2px no-repeat,
-    linear-gradient(currentColor 0 0) left top / 2px 8px no-repeat,
-    linear-gradient(currentColor 0 0) right bottom / 8px 2px no-repeat,
-    linear-gradient(currentColor 0 0) right bottom / 2px 8px no-repeat;
-}
-
-.expand-icon::after,
-.shrink-icon::after {
-  transform: rotate(180deg);
-}
-
-.expand-icon {
   transform: rotate(45deg);
-}
-
-.shrink-icon {
-  transform: rotate(225deg);
 }
 
 .card-zoom-button:hover .expand-icon,
 .solar-expand:hover .expand-icon {
-  transform: rotate(45deg) scale(1.12);
+  transform: rotate(45deg) scale(1.14);
 }
 
 .shrink-button:hover .shrink-icon,
 .solar-close:hover .shrink-icon {
-  transform: rotate(225deg) scale(0.9);
+  transform: rotate(45deg) scale(0.92);
+}
+
+.expand-icon {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 5V1h4'/%3E%3Cpath d='M1 1l5 5'/%3E%3Cpath d='M13 9v4H9'/%3E%3Cpath d='M13 13L8 8'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 5V1h4'/%3E%3Cpath d='M1 1l5 5'/%3E%3Cpath d='M13 9v4H9'/%3E%3Cpath d='M13 13L8 8'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.shrink-icon {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 1v4H2'/%3E%3Cpath d='M1 1l5 5'/%3E%3Cpath d='M8 13V9h4'/%3E%3Cpath d='M13 13L8 8'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 1v4H2'/%3E%3Cpath d='M1 1l5 5'/%3E%3Cpath d='M8 13V9h4'/%3E%3Cpath d='M13 13L8 8'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 .freq-badge {
