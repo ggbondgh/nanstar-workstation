@@ -2549,15 +2549,16 @@ body.theme-light .sync-status {
     gap: 6px;
   }
   .topbar-actions button {
-    width: 100%; min-height: 34px; padding: 0 8px;
+    min-height: 36px; padding: 0 8px;
     font-size: 12px; gap: 5px;
+    justify-content: center;
   }
   .topbar-actions .primary-button {
-    grid-column: 1 / -1; min-height: 38px;
+    grid-column: 1 / -1; min-height: 38px; width: 100%;
   }
   .theme-text, .language-text, .sync-text { display: none; }
   .theme-toggle, .language-toggle, .sync-button {
-    min-width: 0; padding: 0 10px;
+    justify-content: center; padding: 0 8px;
   }
 
   /* Search section */
