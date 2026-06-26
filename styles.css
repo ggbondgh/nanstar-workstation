@@ -2485,90 +2485,171 @@ body.theme-light .sync-status {
 }
 
 @media (max-width: 720px) {
+  /* === Sidebar → compact sticky top bar === */
   .sidebar {
-    gap: 14px;
-    padding: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    height: auto;
+    padding: 10px 14px;
+    gap: 8px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
+  .brand { gap: 8px; }
+  .brand-mark {
+    width: 32px; height: 32px; font-size: 13px; border-radius: 7px;
+  }
+  .brand-mark::after { inset: -3px; border-radius: 9px; }
+  .brand h1 { font-size: 17px; }
+  .brand p { font-size: 10px; margin-top: 1px; }
 
+  /* Nav: horizontal 2-col compact */
   .nav {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
+    gap: 6px;
   }
-
   .nav-item {
-    min-height: 58px;
-    padding: 10px 11px 10px 13px;
+    min-height: 42px;
+    padding: 7px 10px 7px 13px;
   }
+  .nav-item span { font-size: 13px; }
+  .nav-item small { font-size: 10px; }
+  .nav-drag-handle { display: none; }
 
-  .nav-item span {
-    font-size: 13px;
+  /* Add module button compact */
+  .add-module-button {
+    min-height: 36px; margin-top: 0; gap: 5px; padding: 0 12px;
   }
+  .add-module-button span { width: 16px; height: 16px; font-size: 13px; }
+  .add-module-button strong { font-size: 12px; }
 
-  .nav-item small {
-    font-size: 11px;
-  }
-
+  /* === Main area === */
   .main {
-    padding: 18px;
+    padding: 14px;
+    height: auto;
+    min-height: calc(100vh - 160px);
   }
 
-  .topbar,
-  .command-card header,
-  .command-card footer {
+  /* Topbar compact */
+  .topbar { margin-bottom: 12px; }
+  .topbar h2 { font-size: 21px; margin-top: 3px; }
+  .topbar, .command-card header, .command-card footer {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .topbar-actions,
-  .search-row {
-    width: 100%;
-    grid-template-columns: 1fr;
-  }
-
+  /* Topbar actions: 2x2 icon-first */
   .topbar-actions {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .topbar-actions button,
-  .search-row button {
     width: 100%;
-    padding-inline: 8px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .topbar-actions button {
+    width: 100%; min-height: 34px; padding: 0 8px;
+    font-size: 12px; gap: 5px;
+  }
+  .topbar-actions .primary-button {
+    grid-column: 1 / -1; min-height: 38px;
+  }
+  .theme-text, .language-text, .sync-text { display: none; }
+  .theme-toggle, .language-toggle, .sync-button {
+    min-width: 0; padding: 0 10px;
   }
 
+  /* Search section */
   .focus-panel {
-    padding: 20px;
+    padding: 14px; gap: 12px; margin-bottom: 12px;
+  }
+  .focus-copy h3 { font-size: 17px; }
+  .search-row {
+    grid-template-columns: 1fr auto; gap: 8px;
+  }
+  .search-row input { min-height: 38px; font-size: 13px; }
+  .signal-row { gap: 6px; }
+  .signal-row button {
+    min-height: 28px; padding: 0 8px; font-size: 11px;
   }
 
-  .focus-copy h3 {
-    font-size: 20px;
+  /* Section head */
+  .section-head { min-height: 36px; }
+  .section-head h3, .status-panel h3 { font-size: 17px; }
+
+  /* Cards: single column, touch-friendly */
+  .card-grid { grid-template-columns: 1fr; gap: 10px; }
+  .command-card { padding: 12px 14px; }
+  .command-card h4 { font-size: 15px; }
+  .command-card p { font-size: 12px; }
+  .command-card .command-line { font-size: 12px; }
+  .copy-button { min-height: 36px; padding: 0 12px; font-size: 12px; }
+
+  /* Right rail: immediately below cards */
+  .right-rail { gap: 10px; margin-top: 6px; }
+  .status-panel { padding: 14px; }
+  .solar-panel .solar-content { min-height: 140px; }
+  .detail-panel .detail-content h3 { font-size: 16px; }
+
+  /* Dialogs wider */
+  .card-dialog {
+    width: calc(100vw - 16px); max-height: 88vh;
+  }
+  .card-form { padding: 14px; }
+  #cardForm > .section-head {
+    margin: 0 -14px; padding: 14px 14px 10px;
+  }
+  #cardForm > .primary-button[type="submit"] {
+    margin: 0 -14px;
   }
 
+  /* Solar overlay */
   .solar-overlay {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(0, 1fr) auto;
-    padding: 18px;
+    padding: 14px;
   }
+  .solar-overlay-top { align-items: flex-start; }
+  .solar-system-large { width: min(82vmin, 380px); }
+  .celestial-info { max-width: none; }
+  .celestial-info h3 { font-size: 20px; }
 
-  .solar-overlay-top {
-    align-items: flex-start;
-  }
-
-  .solar-system-large {
-    width: min(86vmin, 520px);
-  }
-
-  .celestial-info {
-    max-width: none;
-  }
+  /* Card zoom */
+  .card-zoom-dialog { width: calc(100vw - 16px); max-height: 85vh; }
+  .zoom-card-shell { max-height: 85vh; }
 }
 
 @media (max-width: 430px) {
-  .topbar-actions {
-    grid-template-columns: 1fr 1fr;
+  .sidebar { padding: 8px 12px; gap: 6px; }
+  .brand-mark { width: 28px; height: 28px; font-size: 11px; }
+  .brand h1 { font-size: 15px; }
+  .brand p { display: none; }
+  .nav { grid-template-columns: 1fr 1fr; gap: 5px; }
+  .nav-item { min-height: 38px; padding: 6px 8px 6px 11px; }
+  .nav-item span { font-size: 12px; }
+  .nav-item small { font-size: 10px; }
+  .add-module-button { min-height: 32px; }
+  .main { padding: 10px; }
+  .topbar h2 { font-size: 18px; }
+  .topbar-actions { gap: 5px; }
+  .topbar-actions button {
+    min-height: 32px; font-size: 11px; padding: 0 6px;
   }
-
-  .topbar-actions .primary-button {
-    grid-column: 1 / -1;
+  .focus-panel { padding: 12px; }
+  .focus-copy h3 { font-size: 15px; }
+  .search-row input {
+    min-height: 36px; font-size: 13px; padding: 0 10px;
+  }
+  .command-card { padding: 10px 12px; gap: 10px; }
+  .command-card h4 { font-size: 14px; }
+  .section-head h3, .status-panel h3 { font-size: 16px; }
+  .card-dialog { width: calc(100vw - 10px); }
+  .card-form { padding: 12px; }
+  #cardForm > .section-head {
+    margin: 0 -12px; padding: 12px 12px 8px;
+  }
+  #cardForm > .primary-button[type="submit"] {
+    margin: 0 -12px;
   }
 }
